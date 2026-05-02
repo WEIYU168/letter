@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>應用文小高手遊戲</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --vermilion:#c0392b; --vermilion-dark:#a93226;
+      --vermilion-glow:rgba(192,57,43,0.35);
+      --jade:#1a7a4a; --gold:#c9952a;
+      --ink:#1a1208; --ink-soft:#3d2c1e;
+      --parchment:#fdf6e3; --parchment-mid:#f5e6c8;
+      --warm-border:rgba(210,180,140,0.45);
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:'Noto Serif TC','PingFang TC','Heiti TC','Microsoft JhengHei',serif;
+      -webkit-tap-highlight-color:transparent;
+      background:linear-gradient(160deg,var(--parchment) 0%,var(--parchment-mid) 100%);
+      min-height:100vh;
+    }
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes zoomIn{from{opacity:0;transform:scale(0.93)}to{opacity:1;transform:scale(1)}}
+    @keyframes inkDrop{0%{opacity:0;transform:scale(0.5) rotate(-6deg)}65%{opacity:1;transform:scale(1.06) rotate(1deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+    @keyframes floatBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+    @keyframes orbitPulse{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.55;transform:scale(1.06)}}
+    @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0);opacity:1}85%{opacity:1}100%{transform:translateY(105vh) rotate(780deg);opacity:0}}
+    @keyframes heartPop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+    @keyframes glowRing{0%,100%{box-shadow:0 0 0 0 var(--vermilion-glow)}50%{box-shadow:0 0 0 10px rgba(192,57,43,0)}}
+    @keyframes shimmerSlide{0%{background-position:-200% center}100%{background-position:200% center}}
+    @keyframes bubbleIn{0%{opacity:0;transform:scale(0.8) translateY(8px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+    @keyframes chatSlide{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+
+    .anim-fade-up{animation:fadeInUp .55s cubic-bezier(.16,1,.3,1) both}
+    .anim-zoom-in{animation:zoomIn .38s cubic-bezier(.34,1.56,.64,1) both}
+    .anim-ink-drop{animation:inkDrop .48s cubic-bezier(.34,1.56,.64,1) both}
+    .anim-float{animation:floatBob 3.6s ease-in-out infinite}
+    .anim-heart-pop{animation:heartPop .42s cubic-bezier(.34,1.56,.64,1) both}
+    .anim-glow-ring{animation:glowRing 2.2s ease-in-out infinite}
+    .anim-bubble{animation:bubbleIn .4s cubic-bezier(.34,1.56,.64,1) both}
+    .anim-chat{animation:chatSlide .35s ease both}
+
+    .bokeh-orb{position:absolute;border-radius:50%;pointer-events:none;animation:orbitPulse ease-in-out infinite}
+
+    .opt-btn{
+      width:100%;text-align:left;padding:12px 14px;
+      border-radius:12px;border:1.8px solid #e6d8c5;
+      background:#fffdf9;cursor:pointer;
+      font-family:inherit;font-size:.9rem;font-weight:500;color:var(--ink-soft);
+      display:flex;align-items:center;gap:10px;
+      transition:all .18s ease;
+      box-shadow:0 2px 6px rgba(0,0,0,.04);
+      position:relative;overflow:hidden;
+    }
+    .opt-btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:transparent;transition:background .18s}
+    .opt-btn:hover:not(:disabled){border-color:var(--vermilion);background:#fff8f7;transform:translateX(5px);box-shadow:4px 4px 14px rgba(192,57,43,.1)}
+    .opt-btn:hover:not(:disabled)::before{background:var(--vermilion)}
+    .opt-btn:disabled{cursor:default}
+    .opt-btn.is-correct{border-color:#16a34a;background:#f0fdf4;color:#15803d}
+    .opt-btn.is-correct::before{background:#16a34a}
+    .opt-btn.is-wrong-ans{border-color:#22c55e;background:#f0fdf4;color:#15803d;opacity:.75}
+    .opt-btn.is-wrong-ans::before{background:#22c55e}
+    .opt-btn.is-wrong{border-color:#fca5a5;background:#fff5f5;color:#b91c1c;opacity:.45}
+    .opt-btn.is-wrong::before{background:#fca5a5}
+    .opt-label{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:8px;background:#f0e8dc;color:#7a5c3a;font-size:.78rem;font-weight:800;flex-shrink:0;transition:all .18s}
+    .opt-btn:hover:not(:disabled) .opt-label{background:rgba(192,57,43,.12);color:var(--vermilion)}
+    .opt-btn.is-correct .opt-label{background:#dcfce7;color:#15803d}
+    .opt-btn.is-wrong .opt-label{background:#fee2e2;color:#b91c1c}
+
+    .heart-bar{display:inline-flex;align-items:center;gap:5px;background:rgba(255,251,245,.93);backdrop-filter:blur(14px);border:1.5px solid var(--warm-border);border-radius:50px;padding:6px 14px;box-shadow:0 4px 20px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.8)}
+
+    /* Speech bubbles */
+    .speech-left{
+      background:rgba(255,253,249,.96);backdrop-filter:blur(16px);
+      border:1.5px solid rgba(230,215,190,.65);border-radius:18px 18px 18px 4px;
+      padding:12px 16px;
+      box-shadow:0 8px 28px rgba(0,0,0,.09),0 2px 6px rgba(0,0,0,.05);
+    }
+    .speech-right{
+      background:rgba(255,253,249,.96);backdrop-filter:blur(16px);
+      border:1.5px solid rgba(230,215,190,.65);border-radius:18px 18px 4px 18px;
+      padding:12px 16px;text-align:right;
+      box-shadow:0 8px 28px rgba(0,0,0,.09),0 2px 6px rgba(0,0,0,.05);
+    }
+    .speech-chat{
+      background:rgba(255,253,249,.97);backdrop-filter:blur(18px);
+      border:1.5px solid rgba(230,215,190,.7);border-radius:16px;
+      padding:14px 18px;
+      box-shadow:0 6px 24px rgba(0,0,0,.08);
+    }
+
+    .prog-track{height:5px;background:rgba(210,180,140,.35);border-radius:99px;overflow:hidden}
+    .prog-fill{height:100%;background:linear-gradient(90deg,var(--vermilion),#e74c3c);border-radius:99px;transition:width .5s cubic-bezier(.34,1,.64,1)}
+
+    .map-popup{background:rgba(255,253,249,.97);backdrop-filter:blur(20px);border:1.5px solid rgba(192,57,43,.22);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.16),0 6px 20px rgba(192,57,43,.08)}
+
+    .dpad-btn{background:rgba(255,255,255,.92);border:none;border-radius:11px;width:46px;height:46px;box-shadow:0 4px 0 rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.09);cursor:pointer;transition:all .1s;display:flex;align-items:center;justify-content:center;font-size:1.1rem;backdrop-filter:blur(8px)}
+    .dpad-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.14)}
+
+    .confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .confetti-piece{position:absolute;top:-14px;border-radius:3px;animation:confettiFall linear forwards}
+
+    .shimmer-text{background:linear-gradient(90deg,#c0392b,#e67e22,#c9952a,#c0392b);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmerSlide 2.8s linear infinite}
+
+    .btn-vermilion{background:linear-gradient(135deg,var(--vermilion) 0%,var(--vermilion-dark) 100%);color:#fff;border:none;border-radius:14px;padding:13px 20px;cursor:pointer;font-family:inherit;font-weight:700;font-size:.95rem;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 6px 20px var(--vermilion-glow),inset 0 1px 0 rgba(255,255,255,.15);transition:all .2s ease}
+    .btn-vermilion:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(192,57,43,.45)}
+    .btn-vermilion:active{transform:translateY(0)}
+
+    .card-shadow{box-shadow:0 24px 80px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.06)}
+
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#d4b896;border-radius:99px}
+
+    /* Chat bubble tail helpers */
+    /* ══ 響應式 ══ */
+    @media (max-width: 860px) {
+      .playing-wrap { flex-direction: column !important; min-height:unset !important; }
+      .playing-left { flex: none !important; width: 100% !important; min-height: 360px !important; }
+      .playing-right{ flex: none !important; width: 100% !important; border-left: none !important; border-top: 1px solid rgba(230,215,190,.5); }
+    }
+    @media (orientation: landscape) and (max-height: 520px) {
+      .playing-wrap { min-height: 96vh !important; }
+      .playing-left { min-height: 96vh !important; }
+      .map-full { min-height: 96vh !important; border-radius: 0 !important; }
+    }
+
+    .challenge-panel{background:linear-gradient(160deg,#fffdf9 0%,#fdf4e7 100%);border-left:1px solid rgba(230,215,190,.55)}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ── SVG 圖示 ── */
+const Heart = ({ className, filled, style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+    fill={filled?"currentColor":"none"} stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+  </svg>
+);
+const Trophy = ({ className, style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+    <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+  </svg>
+);
+const ArrowRight = ({ className, style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+  </svg>
+);
+const Play = ({ className, style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className} style={style}>
+    <polygon points="6 3 20 12 6 21 6 3"/>
+  </svg>
+);
+const BookOpen = ({ className, style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+  </svg>
+);
+const AlertCircle = ({ className, style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+  </svg>
+);
+const CheckCircle2 = ({ className, style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+  </svg>
+);
+const MessageCircle = ({ style }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+  </svg>
+);
+
+/* ── 勝利紙花 ── */
+const Confetti = () => {
+  const colors = ['#c0392b','#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#e91e63','#1abc9c'];
+  const pieces = useMemo(() => Array.from({length:80},(_,i)=>({
+    id:i, color:colors[i%colors.length],
+    left:`${Math.random()*100}%`,
+    width:`${5+Math.random()*9}px`, height:`${9+Math.random()*13}px`,
+    delay:`${Math.random()*2.4}s`, duration:`${2.4+Math.random()*2}s`,
+    round:Math.random()>.5,
+  })),[]);
+  return (
+    <div className="confetti-wrap">
+      {pieces.map(p=>(
+        <div key={p.id} className="confetti-piece" style={{left:p.left,width:p.width,height:p.height,background:p.color,animationDelay:p.delay,animationDuration:p.duration,borderRadius:p.round?'50%':'3px'}}/>
+      ))}
+    </div>
+  );
+};
+
+/* ── 場景聊天資料 ── */
+const chatData = {
+  home: [
+    { charIdx:0, messages:[
+      '你今天表現超棒！媽媽跟你說，以後留便條給家人，記得寫清楚時間、事情，署名後面寫「留」就好——千萬不能寫「敬啟」喔！',
+      '對了，媽媽上次幫外婆寫生日卡片，不知道怎麼問安，你能告訴我嗎？沒錯，就是「叩請 金安」，因為外婆是長輩！',
+      '謝謝你幫媽媽複習了這麼多。媽媽以後寫信，一定請你當小顧問！你是媽媽的驕傲喔！'
+    ]},
+    { charIdx:1, messages:[
+      '哈哈，爸爸年輕的時候，也曾把提稱語搞錯，把寫給老師的信用了平輩的「大鑒」，被老師退信了，真是囧！',
+      '應用文說穿了就是禮貌的藝術——對父母用「膝下」，對老師用「函丈」，對朋友用「台鑒」，看對象調整！',
+      '加油！等你把六關都過了，爸爸請你吃大餐！不過你現在就已經讓爸爸刮目相看了，真的！'
+    ]},
+  ],
+  playground: [
+    { charIdx:0, messages:[
+      '你剛才好厲害！我本來以為對同學可以用任何提稱語，原來只能用「大鑒」或「台鑒」！我趕快記在腦子裡！',
+      '對了，我最近要幫班上寫失物招領公告，你說這算不算「啟事」？對啊！就是啟事，就是向大家公開說明一件事！',
+      '謝謝你今天陪我練習！你不只應用文好，人也好！我們以後一起讀書，互相考對方，好不好？'
+    ]},
+  ],
+  classroom: [
+    { charIdx:0, messages:[
+      '你表現得非常好！老師想問你，如果你要寫信給我表達感謝，信封上應該用什麼啟封詞？答對了，就是「道啟」，這是對老師專用的！',
+      '對老師自稱要用「受業」或「學生」——這不只是規定，更是對知識傳授的感謝與尊重。你理解這個精神了嗎？',
+      '老師很開心你學得這麼認真！以後把這些知識分享給同學吧，教別人是最好的學習方式！'
+    ]},
+  ],
+  countryside: [
+    { charIdx:0, messages:[
+      '嗯！乖孫！以前你爸爸從外地寄來的信，每封都工工整整、客客氣氣，讓爺爺看了好高興。現在你也學會了，真不錯！',
+      '壽帖題辭也很講究——男性長輩用「松柏長青」，女性長輩用「萱草長春」。這是中華文化的智慧，要好好保留！',
+      '謝謝你今天陪爺爺過生日，還學了這麼多應用文！等下我們一起吃長壽麵，再讓你帶幾樣點心回去！'
+    ]},
+    { charIdx:1, messages:[
+      '哎呀，乖孫回答得這麼好，奶奶臉上有光啊！奶奶年輕的時候，收到鄰居的信都是很正式的格式，現在想想好溫馨！',
+      '你剛才說的「萱草長春」，奶奶聽了好感動喔！原來是代表媽媽的意思，以後你也要在媽媽生日送她這樣的祝福！',
+      '好了，點心準備好了！等你把所有關卡都通過，奶奶親手做你最愛的蘿蔔糕當獎勵！你是奶奶最疼愛的寶貝！'
+    ]},
+  ],
+  mall: [
+    { charIdx:0, messages:[
+      '你真是個應用文小高手！我昨天收到一封合作邀請信，對方的提稱語寫「台鑒」，你說對嗎？對！因為我們是平輩關係！',
+      '做生意的人，一封信就是一張臉。用詞正確，人家才覺得你專業可靠。這道理你現在就懂，以後一定大有出息！',
+      '謝謝你今天幫我把關！市集開幕大吉，你是我們的幸運星！以後有任何應用文問題，我第一個找你諮詢！'
+    ]},
+  ],
+  mountain: [
+    { charIdx:0, messages:[
+      '哇～你好厲害喔！我原來不知道寫信給晚輩，啟封詞直接寫「啟」就好了，還以為一定要很正式的用語！',
+      '對了，我想邀請同學來參加才藝發表會，你說這算不算柬帖？對！就是柬帖！要寫清楚時間、地點、邀請的目的！',
+      '謝謝你今天陪我爬後山，還教了我好多！等我長大，我也要像你一樣把應用文學得好好的，然後教自己的小孩！'
+    ]},
+  ],
+};
+
+/* ── 場景題庫資料 ── */
+const scenesData = [
+  {
+    id:'home', title:'溫暖的家',
+    mapX:20, mapY:30,
+    bg:'from-amber-100 via-orange-50 to-amber-200',
+    bgImage:'home.png', icon:'🏠', accent:'#c0392b',
+    description:'早晨準備出門，遇到家人與留便條紙的情境...',
+    dialogues:[
+      { name:'媽媽', avatar:'媽媽.png', text:'早安呀！媽媽今天會出門，幫我才會回來，如果有事，你記得看餐桌上的便條紙！' },
+      { name:'爸爸', avatar:'爸爸.png', text:'對了，順便考考你最近學的書信常識，準備好了嗎？' }
+    ],
+    questions:[
+      { q:'寫給父母親的書信，提稱語應該使用下列何者？', options:['膝下','尊鑒','台鑒'], answer:0, hint:'對父母祖父母使用專屬的提稱語，表示依戀與敬重。' },
+      { q:'哥哥對弟弟說話時，自稱應該用什麼？', options:['愚','弟','愚兄'], answer:2, hint:'「愚」有謙稱的意思，加上稱謂可用於平輩。' },
+      { q:'留給家人的便條紙，【不適合】寫下列何者？', options:['今天晚餐吃什麼','提款卡的密碼','家人連絡電話'], answer:1, hint:'便條紙是家人會看到的紙張，千萬不要寫上密碼等隱私資訊，很不安全！' },
+      { q:'寫信給父母，信末的「請安語」應該使用下列何者？', options:['敬請 鈞安','叩請 金安','順頌 時綏'], answer:1, hint:'對父母祖父母等長輩，請安語常用「叩請 金安」或「敬請 福安」。' },
+      { q:'信封中路寫給父親，下列格式何者完全正確？', options:['某某 父親 安啟','某某 先生 安啟','某某 先生 敬啟'], answer:1, hint:'信封中路不能寫「父親」，要用一般稱呼「先生」；啟封詞給長輩用「安啟」，不能用「敬啟」。' },
+      { q:'在書信中，如果提到自己時將字體縮小並偏右書寫，這稱為？', options:['側書','平抬','挪抬'], answer:0, hint:'將自己的稱呼或名字縮小並偏右書寫，稱為「側書」，是表示謙卑的用法。' }
+    ]
+  },
+  {
+    id:'playground', title:'學校操場',
+    mapX:50, mapY:15,
+    bg:'from-emerald-100 via-green-50 to-teal-100',
+    bgImage:'操場.png', icon:'⚽', accent:'#1a7a4a',
+    description:'下課時間在操場遇到同學，以及看見佈告欄...',
+    dialogues:[
+      { name:'女同學 小美', avatar:'同學.png', text:'嗨！好巧喔，在這裡遇到你。你剛好在看佈告欄嗎？我們來互相考考應用文吧！' }
+    ],
+    questions:[
+      { q:'遇到同學，想禮貌問候對方的母親，應該稱呼？', options:['令堂','家母','寶眷'], answer:0, hint:'稱呼別人的親屬要用「令」，稱呼自己的親屬用「家」。' },
+      { q:'學校佈告欄上貼著一張「啟事」，「啟事」的主要用途是什麼？', options:['抒發個人情感','向大眾公開陳述事情','寫給校長的私信'], answer:1, hint:'「啟事」是公開向大家說明某件事情的應用文。' },
+      { q:'寫信給同學，信封上的「啟封詞」應該使用？', options:['敬啟','鈞啟','大啟 / 台啟'], answer:2, hint:'平輩使用的是大啟或台啟。鈞啟是給長輩的。' },
+      { q:'寫信給平輩同學，提稱語可以使用下列何者？', options:['大鑒 / 台鑒','尊鑒 / 賜鑒','知之'], answer:0, hint:'「大鑒」「台鑒」是用於平輩的提稱語；「尊鑒」用於長輩，「知之」用於晚輩。' },
+      { q:'寫信給同學，信末署名下的敬辭應該用？', options:['敬上','叩上','敬啟 / 謹啟'], answer:2, hint:'對平輩署名下用「敬啟」或「謹啟」；「敬上」是對長輩用的。' },
+      { q:'向同學介紹自己的家鄉，應用文中通常會如何自稱？', options:['不才 / 愚','晚輩','令弟'], answer:0, hint:'「不才」或「愚」可用於對平輩的謙稱。' }
+    ]
+  },
+  {
+    id:'classroom', title:'班級教室',
+    mapX:50, mapY:40,
+    bg:'from-sky-100 via-blue-50 to-indigo-100',
+    bgImage:'教室.png', icon:'🏫', accent:'#1e40af',
+    description:'在教室裡準備寫卡片或信件給辛苦的老師...',
+    dialogues:[
+      { name:'班級老師', avatar:'老師.png', text:'各位同學好，教師節快到了。在寫卡片給老師之前，我先來測驗一下你們的書信格式對不對！' }
+    ],
+    questions:[
+      { q:'寫信給老師，提稱語應該用下列何者最恰當？', options:['膝下','函丈 / 道鑒','知之'], answer:1, hint:'「函丈」是指老師講學的地方，用來借代對老師的尊稱。' },
+      { q:'寫信給老師時，對老師自稱應該使用？', options:['愚','受業 / 學生','不才'], answer:1, hint:'對老師自稱為受業或學生最為得體。' },
+      { q:'寫信給老師，結尾的問候語應該用？', options:['敬請 教安','順頌 時綏','恭請 福安'], answer:0, hint:'教安是專門用來問候教育界人士（老師）的。' },
+      { q:'寄信給老師，信封上的「啟封詞」最適合用什麼？', options:['道啟','安啟','大啟'], answer:0, hint:'對老師或教育界人士，專用的啟封詞是「道啟」。' },
+      { q:'向別人稱呼自己的老師，應該用下列哪一個詞？', options:['令師','敝業師','先師'], answer:1, hint:'稱呼自己的老師用「敝業師」；「先師」是指已經過世的老師喔！' },
+      { q:'在辦公室留一張「便條」給老師請假，格式上通常可以省略什麼？', options:['提稱語和啟封詞','自己的署名','請假的原因'], answer:0, hint:'便條性質簡單，通常省略提稱語、結尾請安語，也沒有信封所以不需要啟封詞。' }
+    ]
+  },
+  {
+    id:'countryside', title:'爺爺奶奶家',
+    mapX:20, mapY:70,
+    bg:'from-yellow-100 via-amber-50 to-lime-100',
+    bgImage:'爺家.png', icon:'🌾', accent:'#c9952a',
+    description:'週末回鄉下探望祖父母，並參加長輩的壽宴...',
+    dialogues:[
+      { name:'爺爺', avatar:'爺爺.png', text:'哎呀，乖孫回來啦！來來來，爺爺八十大壽，來幫我看看這些紅包和信件寫得對不對呀？' },
+      { name:'奶奶', avatar:'奶奶.png', text:'是呀，你先幫爺爺檢查一下，奶奶去廚房拿你最愛吃的點心喔！' }
+    ],
+    questions:[
+      { q:'寫信給祖父母，信封上的啟封詞應該用？', options:['安啟','敬啟','慈啟'], answer:0, hint:'對親屬長輩（父母、祖父母）要用「安啟」，表示請對方平安地打開。' },
+      { q:'向親友介紹自己的爺爺，應該如何謙稱？', options:['令祖父','家祖父','敝祖父'], answer:1, hint:'向別人稱呼自己的長輩要用「家」字輩。' },
+      { q:'祝賀祖母八十大壽，紅包上的題辭可以使用？', options:['萱草長春','春秋不老','松柏長青'], answer:0, hint:'「萱草」代表母親，常用來祝賀女性長輩壽辰。' },
+      { q:'祝賀爺爺八十大壽，除了壽比南山，還可以使用哪個題辭？', options:['松柏長青','花好月圓','杏林春暖'], answer:0, hint:'「松柏」象徵長壽不衰，常用來祝賀男性長輩壽辰。' },
+      { q:'如果奶奶生病了，寫信問候時的「結尾請安語」可以用？', options:['敬請 痊安','順頌 籌安','恭請 教安'], answer:0, hint:'「痊安」專門用來祝禱生病的人早日康復。' },
+      { q:'爺爺收到了喜帖，上面寫著「闔第光臨」，這句話的意思是？', options:['請準時到達','請全家人一起來參加','請帶禮金來'], answer:1, hint:'「闔第」就是全家人的意思，邀請全家光臨。' }
+    ]
+  },
+  {
+    id:'mall', title:'文創市集',
+    mapX:50, mapY:75,
+    bg:'from-purple-100 via-fuchsia-50 to-pink-100',
+    bgImage:'商店.png', icon:'🛍️', accent:'#7c3aed',
+    description:'來到熱鬧的文創市集，這裡有許多商業應用文...',
+    dialogues:[
+      { name:'老闆叔叔', avatar:'老闆.png', text:'歡迎光臨！我們市集今天剛開幕，有很多祝賀花籃和商業信函，小大師能幫我檢查一下用語嗎？' }
+    ],
+    questions:[
+      { q:'祝賀百貨公司新開幕，送花籃上的題辭可以寫？', options:['近悅遠來 / 萬商雲集','百年好合','杏林春暖'], answer:0, hint:'要祝福商店生意興隆，客人從各地而來。' },
+      { q:'寫信給平輩的生意合作夥伴，結尾祝候語可以使用？', options:['敬請 鈞安','順頌 時綏','叩請 金安'], answer:1, hint:'「時綏」是祝福平輩時常平安順遂的用語。' },
+      { q:'信封中路寫給生意夥伴（平輩），「先生」底下應接什麼啟封詞？', options:['台啟','鈞啟','安啟'], answer:0, hint:'對平輩要用台啟或大啟喔！' },
+      { q:'如果文創市集裡有一家「診所」新開幕，應該送哪種題辭？', options:['杏林春暖 / 華佗再世','高朋滿座 / 近悅遠來','造福桑梓 / 為民喉舌'], answer:0, hint:'「杏林」是醫界的代稱，用來祝賀醫院或診所最適合。' },
+      { q:'商業界寫信給其他公司的長官或前輩，提稱語應使用？', options:['鈞鑒 / 尊鑒','膝下','大鑒'], answer:0, hint:'對長官或長輩，應該使用「鈞鑒」或「尊鑒」表示尊敬。' },
+      { q:'寄信給文創市集的管理委員會（機關團體），信封上的「啟封詞」應該用？', options:['安啟','大啟','公啟'], answer:2, hint:'寫給機關團體或公司行號，啟封詞要使用「公啟」。' }
+    ]
+  },
+  {
+    id:'mountain', title:'學校後山',
+    mapX:85, mapY:15,
+    bg:'from-teal-100 via-emerald-50 to-cyan-100',
+    bgImage:'後山.png', icon:'⛰️', accent:'#0d9488',
+    description:'放學後和小姪女到後山散步，聊起了平常寫作的習慣...',
+    dialogues:[
+      { name:'小姪女', avatar:'小姪女.png', text:'阿姨！我們在後山看風景，順便告訴我一些關於應用文小知識吧！' }
+    ],
+    questions:[
+      { q:'關於「便條」的寫作，下列敘述何者錯誤？', options:['語言必須莊重嚴肅','通常用於熟識的親友之間','不須使用啟封詞'], answer:0, hint:'便條性質較輕鬆，語言只要表達清楚即可，不一定需要莊重嚴肅喔。' },
+      { q:'邀請親友來參加自己的畢業典禮，所寫的應用文稱為？', options:['啟事','柬帖','公文'], answer:1, hint:'柬帖是用來邀請客人、報告喜喪等事項的實用文書。' },
+      { q:'如果小姪女要寄信給你，信封中路的「稱呼」應該怎麼寫才正確？', options:['某某 叔叔/阿姨','某某 先生/小姐','某某 愚叔/愚姨'], answer:1, hint:'信封中路的稱呼是給「郵差」看的，所以要用一般稱呼（如先生、小姐），不能寫親屬稱謂喔！' },
+      { q:'寫信給晚輩（如弟弟妹妹），信封上的「啟封詞」可以使用？', options:['啟','大啟','安啟'], answer:0, hint:'對晚輩直接寫「啟」即可，不需要特別加上敬語。' },
+      { q:'向別人稱呼自己的妹妹，正確的謙稱是？', options:['令妹','舍妹','家妹'], answer:1, hint:'對別人稱呼自己平輩或晚輩的親屬，要用「舍」字輩（舍弟、舍妹）。' },
+      { q:'寫信給晚輩時，信末的請安語可以怎麼寫？', options:['順頌 時綏','叩請 金安','順問 近佳 / 即問 近好'], answer:2, hint:'對晚輩通常用比較輕鬆的問候，如「順問 近佳」或「即問 近好」。' }
+    ]
+  }
+];
+
+/* ══ 主元件 ══ */
+function App() {
+  const [gameState, setGameState]           = useState('pre-video');
+  const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
+  const [hearts, setHearts]                 = useState([false,false,false,false,false,false]);
+  const [playerPos, setPlayerPos]           = useState({ x:35, y:50 });
+  const [nearbyScene, setNearbyScene]       = useState(null);
+  const [isChallenging, setIsChallenging]   = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [feedback, setFeedback]             = useState(null);
+
+  /* chat states */
+  const [isChatting, setIsChatting]         = useState(false);
+  const [chatCharIdx, setChatCharIdx]       = useState(0);
+  const [chatMsgIdx, setChatMsgIdx]         = useState(0);
+
+  const bgmRef          = useRef(null);
+  const correctSoundRef = useRef(null);
+  const wrongSoundRef   = useRef(null);
+  const keysRef         = useRef({ ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false });
+  const requestRef      = useRef();
+
+  /* ── Web Audio 音效合成 ── */
+  function playBeep(type) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (type === 'correct') {
+        // 三音上升叮
+        [523, 659, 784].forEach((freq, i) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.type = 'sine';
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(0, ctx.currentTime + i*0.12);
+          g.gain.linearRampToValueAtTime(0.22, ctx.currentTime + i*0.12 + 0.04);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.12 + 0.22);
+          o.start(ctx.currentTime + i*0.12);
+          o.stop(ctx.currentTime + i*0.12 + 0.25);
+        });
+      } else if (type === 'wrong') {
+        // 兩音下降嗡
+        [300, 220].forEach((freq, i) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.type = 'sawtooth';
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(0.18, ctx.currentTime + i*0.18);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.18 + 0.28);
+          o.start(ctx.currentTime + i*0.18);
+          o.stop(ctx.currentTime + i*0.18 + 0.3);
+        });
+      } else if (type === 'fireworks') {
+        // 煙火爆炸聲串
+        [0, 0.35, 0.68, 1.05, 1.4].forEach(delay => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          const nGain = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.type = 'sawtooth';
+          o.frequency.setValueAtTime(600 + Math.random()*300, ctx.currentTime + delay);
+          o.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + delay + 0.4);
+          g.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.45);
+          o.start(ctx.currentTime + delay);
+          o.stop(ctx.currentTime + delay + 0.5);
+          // 雜音爆裂
+          const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let k=0; k<data.length; k++) data[k] = Math.random()*2-1;
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.connect(nGain); nGain.connect(ctx.destination);
+          nGain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
+          nGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
+          src.start(ctx.currentTime + delay);
+        });
+      }
+    } catch(e) {}
+  }
+
+  useEffect(() => {
+    bgmRef.current = new Audio('校園午後散步.mp3');
+    bgmRef.current.loop = true;
+    correctSoundRef.current = new Audio('correct.mp3');
+    wrongSoundRef.current   = new Audio('wrong.mp3');
+  }, []);
+
+  /* 嘗試播放 mp3，失敗則用 Web Audio 合成 */
+  function playCorrect() {
+    if (correctSoundRef.current) {
+      correctSoundRef.current.currentTime = 0;
+      correctSoundRef.current.play().catch(() => playBeep('correct'));
+    } else { playBeep('correct'); }
+  }
+  function playWrong() {
+    if (wrongSoundRef.current) {
+      wrongSoundRef.current.currentTime = 0;
+      wrongSoundRef.current.play().catch(() => playBeep('wrong'));
+    } else { playBeep('wrong'); }
+  }
+
+  /* 鍵盤 */
+  useEffect(() => {
+    const dn=(e)=>{ if(e.key in keysRef.current){ keysRef.current[e.key]=true; if(gameState==='map')e.preventDefault(); }};
+    const up=(e)=>{ if(e.key in keysRef.current){ keysRef.current[e.key]=false; if(gameState==='map')e.preventDefault(); }};
+    window.addEventListener('keydown',dn); window.addEventListener('keyup',up);
+    return ()=>{ window.removeEventListener('keydown',dn); window.removeEventListener('keyup',up); };
+  }, [gameState]);
+
+  /* 地圖移動迴圈 */
+  useEffect(() => {
+    if (gameState !== 'map') return;
+    const tick = () => {
+      setPlayerPos(prev => {
+        let dx=0,dy=0; const sp=0.6;
+        if(keysRef.current.ArrowUp)    dy-=sp;
+        if(keysRef.current.ArrowDown)  dy+=sp;
+        if(keysRef.current.ArrowLeft)  dx-=sp;
+        if(keysRef.current.ArrowRight) dx+=sp;
+        if(dx!==0||dy!==0){
+          const nx=Math.max(3,Math.min(97,prev.x+dx));
+          const ny=Math.max(3,Math.min(97,prev.y+dy));
+          if(nx!==prev.x||ny!==prev.y) return {x:nx,y:ny};
+        }
+        return prev;
+      });
+      requestRef.current = requestAnimationFrame(tick);
+    };
+    requestRef.current = requestAnimationFrame(tick);
+    return ()=>cancelAnimationFrame(requestRef.current);
+  }, [gameState]);
+
+  const handlePointerDown = (dir) => { keysRef.current[dir]=true; };
+  const handlePointerUp   = (dir) => { keysRef.current[dir]=false; };
+
+  /* 距離偵測 */
+  useEffect(() => {
+    if (gameState!=='map') return;
+    let found=null;
+    for(let i=0;i<scenesData.length;i++){
+      const s=scenesData[i];
+      if(Math.sqrt((playerPos.x-s.mapX)**2+(playerPos.y-s.mapY)**2)<10){ found=i; break; }
+    }
+    setNearbyScene(found);
+  }, [playerPos, gameState]);
+
+  /* 遊戲流程 */
+  const goToPreVideo = () => {
+    setGameState('pre-video');
+    setHearts([false,false,false,false,false,false]);
+    setCurrentSceneIndex(0);
+    if(bgmRef.current){ bgmRef.current.pause(); bgmRef.current.currentTime=0; }
+  };
+  const startGame = () => {
+    setGameState('map');
+    setPlayerPos({x:35,y:50});
+    setCurrentSceneIndex(0);
+    setHearts([false,false,false,false,false,false]);
+    if(bgmRef.current){ bgmRef.current.currentTime=0; bgmRef.current.play().catch(()=>{}); }
+  };
+  const enterScene = (i) => {
+    setCurrentSceneIndex(i); setGameState('playing');
+    setIsChallenging(false); setIsChatting(false); setChatMsgIdx(0); setChatCharIdx(0);
+  };
+  const returnToMap = () => {
+    if(hearts.filter(Boolean).length===6){
+      setGameState('victory');
+      if(bgmRef.current) bgmRef.current.pause();
+      setTimeout(()=>playBeep('fireworks'),300);
+    } else {
+      setGameState('map');
+    }
+  };
+  const openChallenge = () => { setCurrentQuestionIndex(0); setFeedback(null); setIsChallenging(true); setIsChatting(false); };
+  const exitChallenge = () => { setIsChallenging(false); setFeedback(null); setGameState('map'); };
+
+  /* 開始聊天 */
+  const startChat = (charIdx) => {
+    setChatCharIdx(charIdx); setChatMsgIdx(0); setIsChatting(true); setIsChallenging(false);
+  };
+  const nextChatMsg = () => {
+    const scId = scenesData[currentSceneIndex].id;
+    const char = chatData[scId][chatCharIdx];
+    if(chatMsgIdx < char.messages.length - 1) setChatMsgIdx(p=>p+1);
+    else setIsChatting(false);
+  };
+
+  const handleAnswer = (optIdx) => {
+    if(feedback!==null) return;
+    const sc = scenesData[currentSceneIndex];
+    const q  = sc.questions[currentQuestionIndex];
+    if(optIdx===q.answer){
+      setFeedback('correct'); playCorrect();
+      setTimeout(()=>{
+        if(currentQuestionIndex < sc.questions.length-1){
+          setCurrentQuestionIndex(p=>p+1); setFeedback(null);
+        } else {
+          const nh=[...hearts]; nh[currentSceneIndex]=true;
+          setHearts(nh); setIsChallenging(false); setFeedback(null);
+        }
+      },1300);
+    } else {
+      setFeedback('wrong'); playWrong();
+      setTimeout(()=>setFeedback(null),2200);
+    }
+  };
+
+  /* ── 共用元件 ── */
+  const HeartDisplay = () => (
+    <div className="heart-bar mx-auto w-max">
+      {hearts.map((earned,i)=>(
+        <div key={i} style={earned?{animation:`heartPop .42s cubic-bezier(.34,1.56,.64,1) both`,animationDelay:`${i*.06}s`}:{}}>
+          <Heart className={`w-5 h-5 sm:w-6 sm:h-6 ${earned?'text-red-500':'text-gray-300'}`} filled={earned}/>
+        </div>
+      ))}
+      <div style={{width:1,height:18,background:'rgba(210,180,140,.5)',margin:'0 3px'}}/>
+      <span style={{fontSize:'.8rem',fontWeight:700,color:'#7a5c3a',letterSpacing:'.03em'}}>{hearts.filter(Boolean).length}/6</span>
+    </div>
+  );
+
+  const scene  = scenesData[currentSceneIndex];
+  const sceneQ = scene.questions[currentQuestionIndex];
+  const scChatData = chatData[scene.id] || [];
+
+  /* ══════════════════════════════════════ RENDER ══════════════════════════════════════ */
+  return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'12px 12px 36px',fontFamily:"'Noto Serif TC','PingFang TC','Microsoft JhengHei',serif"}}>
+
+      {/* ──────────── PRE-VIDEO ──────────── */}
+      {gameState==='pre-video' && (
+        <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+          {/* 背景圖 */}
+          <div style={{position:'absolute',inset:0,backgroundImage:"url('背景畫面2.png')",backgroundSize:'cover',backgroundPosition:'center'}}/>
+          {/* 深色遮罩讓文字清晰 */}
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(145deg,rgba(13,8,4,.72) 0%,rgba(24,14,6,.65) 55%,rgba(10,13,24,.72) 100%)'}}/>
+          {[{w:220,h:220,t:'8%',l:'12%',c:'rgba(192,57,43,.13)',d:'0s',dr:'4.5s'},{w:150,h:150,t:'68%',l:'72%',c:'rgba(201,149,42,.1)',d:'1.2s',dr:'5.5s'},{w:100,h:100,t:'38%',l:'82%',c:'rgba(26,122,74,.09)',d:'2.2s',dr:'3.8s'},{w:240,h:240,t:'58%',l:'3%',c:'rgba(192,57,43,.07)',d:'.6s',dr:'6.5s'},{w:70,h:70,t:'18%',l:'58%',c:'rgba(201,149,42,.14)',d:'1.7s',dr:'4.2s'},{w:90,h:90,t:'82%',l:'40%',c:'rgba(192,57,43,.08)',d:'3s',dr:'5s'}].map((o,i)=>(
+            <div key={i} className="bokeh-orb" style={{width:o.w,height:o.h,top:o.t,left:o.l,background:`radial-gradient(circle,${o.c},transparent 70%)`,animationDelay:o.d,animationDuration:o.dr,filter:'blur(22px)'}}/>
+          ))}
+          <div style={{position:'absolute',fontSize:'10rem',opacity:.025,color:'#fff',fontWeight:900,top:'2%',left:'3%',lineHeight:1,userSelect:'none'}}>文</div>
+          <div style={{position:'absolute',fontSize:'7rem',opacity:.02,color:'#fff',fontWeight:900,bottom:'8%',right:'5%',lineHeight:1,userSelect:'none'}}>書</div>
+          <div style={{position:'absolute',fontSize:'5rem',opacity:.015,color:'#fff',fontWeight:900,top:'42%',left:'3%',lineHeight:1,userSelect:'none'}}>信</div>
+          <div style={{position:'relative',zIndex:10,textAlign:'center',padding:'0 28px'}}>
+            <div className="anim-float" style={{width:90,height:90,borderRadius:'50%',margin:'0 auto 28px',background:'linear-gradient(135deg,rgba(192,57,43,.28),rgba(201,149,42,.18))',border:'1px solid rgba(192,57,43,.4)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 50px rgba(192,57,43,.2)'}}>
+              <BookOpen style={{width:38,height:38,color:'#e8c87a'}}/>
+            </div>
+            <h1 style={{fontSize:'clamp(1.9rem,5.5vw,3rem)',fontWeight:900,color:'#f5e6c8',marginBottom:8,letterSpacing:'.12em',textShadow:'0 2px 24px rgba(192,57,43,.55)'}}>應用文小高手</h1>
+            <p style={{color:'rgba(245,230,200,.45)',fontSize:'.82rem',marginBottom:38,letterSpacing:'.22em'}}>書信 · 便條 · 題辭</p>
+            <button className="anim-glow-ring" onClick={()=>setGameState('video')}
+              onMouseEnter={e=>e.currentTarget.style.transform='translateY(-3px) scale(1.03)'}
+              onMouseLeave={e=>e.currentTarget.style.transform='translateY(0) scale(1)'}
+              style={{background:'linear-gradient(135deg,#c0392b,#a93226)',color:'white',border:'none',cursor:'pointer',padding:'14px 44px',borderRadius:'50px',fontSize:'1.08rem',fontWeight:700,fontFamily:"'Noto Serif TC',serif",letterSpacing:'.08em',boxShadow:'0 8px 32px rgba(192,57,43,.48),inset 0 1px 0 rgba(255,255,255,.15)',transition:'all .22s ease'}}>
+              點擊進入遊戲
+            </button>
+            <p style={{color:'rgba(245,230,200,.5)',marginTop:18,fontSize:'.82rem'}}>請開啟喇叭以獲得最佳體驗 🔊</p>
+            <p style={{color:'#ffffff',marginTop:12,fontSize:'1rem',fontWeight:700,letterSpacing:'.18em',textShadow:'0 1px 12px rgba(0,0,0,.6)'}}>南一書局 × 林威宇老師 製作</p>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────── VIDEO ──────────── */}
+      {gameState==='video' && (
+        <div style={{position:'fixed',inset:0,background:'#000',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <video src="琪琪的應用文生活.mp4" autoPlay playsInline onEnded={()=>setGameState('intro')} style={{width:'100%',height:'100%',objectFit:'contain'}}>您的瀏覽器不支援影片播放。</video>
+          <button onClick={()=>setGameState('intro')} style={{position:'absolute',bottom:28,right:28,background:'rgba(255,255,255,.14)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,.28)',color:'white',padding:'10px 24px',borderRadius:'50px',cursor:'pointer',fontFamily:"'Noto Serif TC',serif",fontSize:'.88rem',fontWeight:600,display:'flex',alignItems:'center',gap:6,transition:'all .2s'}}>
+            略過 <ArrowRight style={{width:16,height:16}}/>
+          </button>
+        </div>
+      )}
+
+      {/* ──────────── INTRO（放大版） ──────────── */}
+      {gameState==='intro' && (
+        <div className="anim-zoom-in card-shadow" style={{maxWidth:680,width:'100%',background:'linear-gradient(160deg,#fffdf9 0%,#fdf4e5 100%)',borderRadius:28,overflow:'hidden',border:'1px solid rgba(210,180,140,.4)'}}>
+          <div style={{height:6,background:'linear-gradient(90deg,#c0392b,#e67e22,#c9952a,#e8c87a)'}}/>
+          <div style={{padding:'40px 44px 44px'}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,marginBottom:28}}>
+              <div style={{width:90,height:90,borderRadius:'50%',background:'linear-gradient(135deg,#fde8e8,#fdf0d8)',border:'2px solid rgba(192,57,43,.18)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 28px rgba(192,57,43,.12)'}}>
+                <BookOpen style={{width:42,height:42,color:'#c0392b'}}/>
+              </div>
+              <h1 style={{textAlign:'center',fontSize:'2rem',fontWeight:900,color:'#1a1208',margin:0,letterSpacing:'.07em'}}>應用文小高手</h1>
+              <p style={{textAlign:'center',color:'#c0392b',fontSize:'.78rem',letterSpacing:'.25em',margin:0,fontWeight:600}}>書信 · 便條 · 題辭</p>
+            </div>
+
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24}}>
+              {[
+                {icon:'📜',title:'書信格式',desc:'學習提稱語、敬辭、啟封詞等完整書信架構'},
+                {icon:'💌',title:'便條禮儀',desc:'掌握便條紙的正確寫法與署名規範'},
+                {icon:'🎊',title:'題辭用語',desc:'認識壽辰、商業、婚喪各類題辭場合'},
+                {icon:'🗺️',title:'六大場景',desc:'穿越家、校、市集等場景闖關冒險'},
+              ].map((item,i)=>(
+                <div key={i} style={{background:'rgba(250,243,228,.75)',border:'1px solid rgba(210,180,140,.45)',borderRadius:14,padding:'14px 16px',display:'flex',gap:10,alignItems:'flex-start'}}>
+                  <span style={{fontSize:'1.5rem'}}>{item.icon}</span>
+                  <div>
+                    <div style={{fontWeight:800,color:'#1a1208',fontSize:'.92rem',marginBottom:3}}>{item.title}</div>
+                    <div style={{color:'#7a5c3a',fontSize:'.78rem',lineHeight:1.55}}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{background:'rgba(250,243,228,.75)',border:'1px solid rgba(210,180,140,.45)',borderRadius:14,padding:'16px 18px',marginBottom:28,fontSize:'.92rem',color:'#5a4030',lineHeight:1.8}}>
+              解開每個場景的考驗，就能獲得 <strong style={{color:'#c0392b'}}>「應用文愛心拼塊」</strong>。
+              集滿 <strong style={{color:'#c0392b'}}>六塊</strong>，就能成為真正的應用文高手！
+              過關後還可以與場景角色聊天，在輕鬆對話中練習口語應用文喔 ✨
+            </div>
+
+            <button onClick={startGame} className="btn-vermilion" style={{width:'100%',padding:'16px',fontSize:'1.05rem'}}
+              onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+              onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}>
+              <Play style={{width:18,height:18}}/> 開始冒險
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────── MAP ──────────── */}
+      {gameState==='map' && (
+        <div className="anim-zoom-in map-full" style={{position:'relative',width:'100%',maxWidth:'min(1380px,100vw - 16px)',borderRadius:20,overflow:'hidden',minHeight:'90vh',border:'1.5px solid rgba(192,57,43,.12)',boxShadow:'0 24px 80px rgba(0,0,0,.13)'}}>
+          <div style={{position:'absolute',inset:0,backgroundImage:"url('大地圖.png')",backgroundSize:'cover',backgroundPosition:'center',opacity:.93}}/>
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(160deg,rgba(253,246,227,.1) 0%,rgba(255,255,255,.04) 100%)'}}/>
+          {/* 場景節點 */}
+          {scenesData.map((sc,idx)=>(
+            <div key={sc.id} style={{position:'absolute',left:`${sc.mapX}%`,top:`${sc.mapY}%`,transform:'translate(-50%,-50%)',display:'flex',flexDirection:'column',alignItems:'center',pointerEvents:'none',transition:'all .35s'}}>
+              <div style={{width:70,height:70,borderRadius:'50%',background:hearts[idx]?'linear-gradient(135deg,#fde8e8,#fecaca)':'rgba(255,253,249,.96)',border:hearts[idx]?'3px solid #c0392b':'2.5px solid rgba(192,57,43,.3)',boxShadow:hearts[idx]?'0 8px 24px rgba(192,57,43,.32)':'0 8px 28px rgba(0,0,0,.13)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem',transform:hearts[idx]?'scale(1.12)':'scale(1)',transition:'all .4s'}}>
+                {hearts[idx]?'❤️':sc.icon}
+              </div>
+              <div style={{marginTop:8,background:'rgba(255,253,249,.97)',backdropFilter:'blur(10px)',padding:'4px 13px',borderRadius:9,fontSize:'.82rem',fontWeight:800,color:'#3d2c1e',boxShadow:'0 4px 12px rgba(0,0,0,.11)',border:'1px solid rgba(210,180,140,.38)',letterSpacing:'.02em'}}>{sc.title}</div>
+            </div>
+          ))}
+          {/* 主角 */}
+          <div style={{position:'absolute',left:`${playerPos.x}%`,top:`${playerPos.y}%`,transform:'translate(-50%,-85%)',zIndex:20,display:'flex',flexDirection:'column',alignItems:'center',pointerEvents:'none'}}>
+            <img src="主角.png" alt="主角" style={{height:110,objectFit:'contain',filter:'drop-shadow(0 10px 20px rgba(0,0,0,.28))',zIndex:10}}/>
+            <div style={{width:40,height:10,background:'rgba(0,0,0,.18)',borderRadius:'50%',filter:'blur(4px)',marginTop:-10}}/>
+          </div>
+          {/* 左上心形 */}
+          <div style={{position:'absolute',top:16,left:16,zIndex:30}}><HeartDisplay/></div>
+          {/* 右下：場景進入按鈕 */}
+          {nearbyScene!==null && (
+            <div className="map-popup anim-fade-up" style={{position:'absolute',bottom:16,right:16,padding:'16px 20px',zIndex:30,minWidth:220,textAlign:'center'}}>
+              <div style={{fontSize:'.75rem',color:'#9a7a5a',fontWeight:700,letterSpacing:'.12em',marginBottom:5}}>{hearts[nearbyScene]?'❤️ 已通關':'✨ 發現關卡'}</div>
+              <div style={{fontSize:'1.05rem',fontWeight:900,color:'#1a1208',marginBottom:12}}>{scenesData[nearbyScene].title}</div>
+              <button onClick={()=>enterScene(nearbyScene)}
+                onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+                onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}
+                style={{width:'100%',padding:'10px',background:'linear-gradient(135deg,#c0392b,#a93226)',color:'white',border:'none',borderRadius:12,cursor:'pointer',fontFamily:"'Noto Serif TC',serif",fontWeight:700,fontSize:'.93rem',display:'flex',alignItems:'center',justifyContent:'center',gap:6,boxShadow:'0 4px 16px rgba(192,57,43,.35)',transition:'all .2s'}}>
+                {hearts[nearbyScene]?'進入場景':'進入挑戰'} <Play style={{width:14,height:14}}/>
+              </button>
+            </div>
+          )}
+          {/* 過關紀錄（紅色打勾） */}
+          <div style={{position:'absolute',top:'50%',right:8,transform:'translateY(-50%)',zIndex:20,width:130,height:230,pointerEvents:'none'}}>
+            <img src="過關紀錄.png" alt="過關紀錄" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'fill',filter:'drop-shadow(0 8px 28px rgba(0,0,0,.18))'}}/>
+            <div style={{position:'absolute',top:'12%',left:'10%',width:'80%',height:'75%',display:'grid',gridTemplateColumns:'1fr 1fr',gridTemplateRows:'1fr 1fr 1fr',gap:4}}>
+              {[0,3,2,1,4,5].map((sIdx,gIdx)=>(
+                <div key={`chk-${gIdx}`} style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  {hearts[sIdx] && (
+                    <div className="anim-zoom-in">
+                      <CheckCircle2 style={{width:36,height:36,color:'#c0392b',filter:'drop-shadow(0 2px 6px rgba(192,57,43,.4))'}}/>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* 左下：方向鍵 */}
+          <div style={{position:'absolute',bottom:16,left:16,display:'grid',gridTemplateColumns:'repeat(3,50px)',gridTemplateRows:'repeat(2,50px)',gap:5,opacity:.82,zIndex:20}}>
+            <div/><button className="dpad-btn" onPointerDown={()=>handlePointerDown('ArrowUp')} onPointerUp={()=>handlePointerUp('ArrowUp')} onPointerLeave={()=>handlePointerUp('ArrowUp')}>⬆️</button><div/>
+            <button className="dpad-btn" onPointerDown={()=>handlePointerDown('ArrowLeft')} onPointerUp={()=>handlePointerUp('ArrowLeft')} onPointerLeave={()=>handlePointerUp('ArrowLeft')}>⬅️</button>
+            <button className="dpad-btn" onPointerDown={()=>handlePointerDown('ArrowDown')} onPointerUp={()=>handlePointerUp('ArrowDown')} onPointerLeave={()=>handlePointerUp('ArrowDown')}>⬇️</button>
+            <button className="dpad-btn" onPointerDown={()=>handlePointerDown('ArrowRight')} onPointerUp={()=>handlePointerUp('ArrowRight')} onPointerLeave={()=>handlePointerUp('ArrowRight')}>➡️</button>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────── PLAYING ──────────── */}
+      {gameState==='playing' && (
+        <div className="anim-zoom-in playing-wrap" style={{display:'flex',flexDirection:'row',width:'100%',maxWidth:1160,background:'white',borderRadius:24,overflow:'hidden',minHeight:'88vh',boxShadow:'0 24px 80px rgba(0,0,0,.13)'}}>
+
+          {/* ── 左側：場景 (62%) ── */}
+          <div className="playing-left" style={{flex:'0 0 62%',width:'62%',position:'relative',overflow:'hidden',minHeight:540}}>
+            {/* 背景圖 */}
+            <div style={{position:'absolute',inset:0,backgroundImage:`url('${scene.bgImage}')`,backgroundSize:'cover',backgroundPosition:'center'}}/>
+            {/* 遮罩：上下半透明，中間透明讓背景顯現 */}
+            <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(255,255,255,.55) 0%,transparent 20%,transparent 50%,rgba(255,255,255,.72) 100%)'}}/>
+
+            <div style={{position:'relative',zIndex:10,display:'flex',flexDirection:'column',height:'100%',minHeight:540,padding:'18px 16px 16px'}}>
+              {/* 上方：愛心 + 標題 */}
+              <div style={{textAlign:'center',marginBottom:'auto'}}>
+                <HeartDisplay/>
+                <div style={{background:'rgba(255,253,249,.9)',backdropFilter:'blur(18px)',borderRadius:16,padding:'10px 18px',marginTop:12,display:'inline-block',border:'1px solid rgba(210,180,140,.42)',boxShadow:'0 8px 28px rgba(0,0,0,.07)',minWidth:200}}>
+                  <div style={{fontSize:'1.8rem',marginBottom:2}}>{scene.icon}</div>
+                  <h2 style={{fontSize:'1.1rem',fontWeight:900,color:'#1a1208',marginBottom:2,margin:0}}>{scene.title}</h2>
+                  <p style={{fontSize:'.72rem',color:'#7a5c3a',margin:'3px 0 0'}}>{scene.description}</p>
+                </div>
+              </div>
+
+              {/* 下方：角色 + 對話 */}
+              {(() => {
+                const isSingle = scene.dialogues.length === 1;
+                const dlg0 = scene.dialogues[0];
+                // 每個單角色場景的排版設定：charSide = 角色位置, bubbleSide = 氣泡位置
+                const layoutMap = {
+                  mall:      { charSide:'right', bubbleSide:'left'  },
+                  classroom: { charSide:'right', bubbleSide:'left'  },
+                  playground:{ charSide:'left',  bubbleSide:'right' },
+                  mountain:  { charSide:'left',  bubbleSide:'right' },
+                };
+                const layout = layoutMap[scene.id] || { charSide:'center', bubbleSide:'left' };
+                const bubbleCls = layout.bubbleSide === 'right' ? 'speech-left' : 'speech-left'; // text always left-aligned
+                const charH = 'clamp(270px,56vh,540px)';
+                const charHMulti = 'clamp(240px,48vh,460px)';
+                const shadow = 'drop-shadow(0 16px 32px rgba(0,0,0,.24))';
+                const nameTag = (acc) => ({display:'inline-block',background:`linear-gradient(135deg,${acc},${acc}cc)`,color:'white',padding:'2px 12px',borderRadius:50,fontSize:'.72rem',fontWeight:700,marginBottom:6,boxShadow:`0 3px 10px ${acc}44`});
+
+                if (isSingle) {
+                  if (layout.charSide === 'right') {
+                    /* ── 角色靠右，對話框靠左 ── */
+                    return (
+                      <div style={{position:'relative',width:'100%',display:'flex',alignItems:'flex-end',justifyContent:'flex-end',paddingTop:12}}>
+                        <div className="speech-left anim-bubble"
+                          style={{position:'absolute',bottom:'72%',left:0,width:'55%',zIndex:5,animationDelay:'.25s'}}>
+                          <span style={nameTag(scene.accent)}>{dlg0.name}</span>
+                          <p style={{fontSize:'.85rem',color:'#3d2c1e',fontWeight:600,lineHeight:1.65,margin:0}}>{dlg0.text}</p>
+                        </div>
+                        <img src={dlg0.avatar} alt={dlg0.name} className="anim-fade-up"
+                          style={{objectFit:'contain',height:charH,filter:shadow,alignSelf:'flex-end'}}/>
+                      </div>
+                    );
+                  } else if (layout.charSide === 'left') {
+                    /* ── 角色靠左，對話框靠右（文字靠左對齊） ── */
+                    return (
+                      <div style={{position:'relative',width:'100%',display:'flex',alignItems:'flex-end',justifyContent:'flex-start',paddingTop:12}}>
+                        <img src={dlg0.avatar} alt={dlg0.name} className="anim-fade-up"
+                          style={{objectFit:'contain',height:charH,filter:shadow,alignSelf:'flex-end'}}/>
+                        <div className="speech-left anim-bubble"
+                          style={{position:'absolute',bottom:'72%',right:0,width:'55%',zIndex:5,animationDelay:'.25s'}}>
+                          <span style={nameTag(scene.accent)}>{dlg0.name}</span>
+                          <p style={{fontSize:'.85rem',color:'#3d2c1e',fontWeight:600,lineHeight:1.65,margin:0}}>{dlg0.text}</p>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    /* ── 角色置中，對話框靠左，圖像稍低 ── */
+                    return (
+                      <div style={{position:'relative',width:'100%',display:'flex',alignItems:'flex-end',justifyContent:'center',paddingTop:12}}>
+                        <div className="speech-left anim-bubble"
+                          style={{position:'absolute',bottom:'76%',left:0,width:'52%',zIndex:5,animationDelay:'.25s'}}>
+                          <span style={nameTag(scene.accent)}>{dlg0.name}</span>
+                          <p style={{fontSize:'.85rem',color:'#3d2c1e',fontWeight:600,lineHeight:1.65,margin:0}}>{dlg0.text}</p>
+                        </div>
+                        <img src={dlg0.avatar} alt={dlg0.name} className="anim-fade-up"
+                          style={{objectFit:'contain',height:'clamp(280px,60vh,560px)',filter:shadow,marginTop:40}}/>
+                      </div>
+                    );
+                  }
+                } else {
+                  /* ── 多角色：左右排列，右側角色文字強制左對齊 ── */
+                  const forceTextLeftIds = ['home','countryside']; // 爸爸/奶奶 idx=1
+                  return (
+                    <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:8,paddingTop:12,width:'100%'}}>
+                      {scene.dialogues.map((dlg, idx) => {
+                        const isRight = idx % 2 === 1;
+                        const textLeft = forceTextLeftIds.includes(scene.id) && isRight;
+                        return (
+                          <div key={`char-${currentSceneIndex}-${idx}`} className="anim-fade-up"
+                            style={{display:'flex',flexDirection:'column',alignItems:isRight?'flex-end':'flex-start',flex:1,maxWidth:'48%',animationDelay:`${idx*0.9}s`}}>
+                            <div className="speech-left anim-bubble"
+                              style={{marginBottom:8,animationDelay:`${idx*0.9+0.25}s`,maxWidth:'100%'}}>
+                              <span style={nameTag(scene.accent)}>{dlg.name}</span>
+                              <p style={{fontSize:'.85rem',color:'#3d2c1e',fontWeight:600,lineHeight:1.65,margin:0,textAlign:'left'}}>{dlg.text}</p>
+                            </div>
+                            <img src={dlg.avatar} alt={dlg.name}
+                              style={{objectFit:'contain',height:charHMulti,filter:shadow,alignSelf:isRight?'flex-end':'flex-start'}}/>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </div>
+
+          {/* ── 右側：題目 / 聊天 (38%) ── */}
+          <div className="challenge-panel playing-right" style={{flex:'0 0 38%',width:'38%',padding:'26px 22px',display:'flex',flexDirection:'column',justifyContent:'center',minHeight:540,overflowY:'auto'}}>
+
+            {/* 狀態一：尚未開始 */}
+            {!isChallenging && !isChatting && !hearts[currentSceneIndex] && (
+              <div className="anim-zoom-in" style={{textAlign:'center'}}>
+                <div style={{width:72,height:72,borderRadius:'50%',margin:'0 auto 16px',background:'linear-gradient(135deg,#fde8e8,#fdf0d8)',border:'2px solid rgba(192,57,43,.2)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 28px rgba(192,57,43,.11)'}}>
+                  <BookOpen style={{width:34,height:34,color:'#c0392b'}}/>
+                </div>
+                <h3 style={{fontSize:'1.1rem',fontWeight:800,color:'#1a1208',marginBottom:8}}>準備好接受考驗了嗎？</h3>
+                <p style={{color:'#7a5c3a',fontSize:'.88rem',marginBottom:24,lineHeight:1.65}}>解開這裡的應用文題目，就能獲得愛心拼塊喔！</p>
+                <button onClick={openChallenge} className="btn-vermilion" style={{width:'100%',padding:'13px'}}
+                  onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+                  onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}>
+                  進入挑戰 <ArrowRight style={{width:17,height:17}}/>
+                </button>
+              </div>
+            )}
+
+            {/* 狀態二：挑戰中 */}
+            {isChallenging && (
+              <div className="anim-fade-up" style={{display:'flex',flexDirection:'column',height:'100%'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,paddingBottom:12,borderBottom:'1px solid rgba(210,180,140,.4)'}}>
+                  <span style={{fontWeight:800,color:'#3d2c1e',fontSize:'.92rem',letterSpacing:'.04em'}}>📜 挑戰題庫</span>
+                  <span style={{background:'linear-gradient(135deg,rgba(192,57,43,.1),rgba(192,57,43,.05))',border:'1px solid rgba(192,57,43,.22)',color:'#c0392b',padding:'3px 11px',borderRadius:50,fontSize:'.76rem',fontWeight:700}}>
+                    {currentQuestionIndex+1} / {scene.questions.length}
+                  </span>
+                </div>
+                <div className="prog-track" style={{marginBottom:15}}>
+                  <div className="prog-fill" style={{width:`${(currentQuestionIndex/scene.questions.length)*100}%`}}/>
+                </div>
+                <h3 style={{fontSize:'.94rem',fontWeight:700,color:'#1a1208',lineHeight:1.72,marginBottom:15}}>{sceneQ.q}</h3>
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                  {sceneQ.options.map((opt,idx)=>{
+                    const isAns = idx===sceneQ.answer;
+                    let cls='opt-btn';
+                    if(feedback==='correct'&&isAns) cls+=' is-correct';
+                    else if(feedback==='wrong'&&isAns) cls+=' is-wrong-ans';
+                    else if(feedback==='wrong'&&!isAns) cls+=' is-wrong';
+                    return (
+                      <button key={idx} className={cls} onClick={()=>handleAnswer(idx)} disabled={feedback!==null}>
+                        <span className="opt-label">{String.fromCharCode(65+idx)}</span>{opt}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{minHeight:80,marginTop:13}}>
+                  {feedback==='correct' && (
+                    <div className="anim-ink-drop" style={{padding:'12px 14px',borderRadius:12,background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1.5px solid #86efac',display:'flex',alignItems:'center',gap:8,color:'#15803d'}}>
+                      <CheckCircle2 style={{width:20,height:20,flexShrink:0}}/><span style={{fontWeight:700,fontSize:'.9rem'}}>答對了！太厲害了！🎉</span>
+                    </div>
+                  )}
+                  {feedback==='wrong' && (
+                    <div className="anim-ink-drop" style={{padding:'12px 14px',borderRadius:12,background:'linear-gradient(135deg,#fff5f5,#fee2e2)',border:'1.5px solid #fca5a5',color:'#b91c1c'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                        <AlertCircle style={{width:20,height:20,flexShrink:0}}/><span style={{fontWeight:700,fontSize:'.87rem'}}>哎呀，答錯囉！再試一次。</span>
+                      </div>
+                      <p style={{fontSize:'.79rem',margin:0,color:'#7f1d1d',lineHeight:1.58}}>💡 提示：{sceneQ.hint}</p>
+                    </div>
+                  )}
+                </div>
+                <div style={{marginTop:'auto',paddingTop:14,borderTop:'1px solid rgba(210,180,140,.38)',textAlign:'center'}}>
+                  <button onClick={exitChallenge}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor='#c0392b';e.currentTarget.style.color='#c0392b'}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor='rgba(210,180,140,.5)';e.currentTarget.style.color='#9a7a5a'}}
+                    style={{background:'none',border:'1px solid rgba(210,180,140,.5)',color:'#9a7a5a',padding:'7px 20px',borderRadius:10,cursor:'pointer',fontFamily:"'Noto Serif TC',serif",fontSize:'.82rem',fontWeight:600,transition:'all .2s'}}>
+                    退出關卡 · 返回大地圖
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 狀態三：已完成（含聊天按鈕） */}
+            {hearts[currentSceneIndex] && !isChallenging && !isChatting && (
+              <div className="anim-fade-up" style={{textAlign:'center'}}>
+                <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1.5px solid #86efac',borderRadius:50,padding:'9px 20px',marginBottom:18}}>
+                  <CheckCircle2 style={{width:18,height:18,color:'#16a34a'}}/><span style={{fontWeight:700,color:'#15803d',fontSize:'.9rem'}}>場景解鎖！獲得愛心拼塊！</span>
+                </div>
+                <p style={{color:'#7a5c3a',fontSize:'.88rem',marginBottom:20,lineHeight:1.65}}>恭喜你完美解決了這裡的應用文難題！</p>
+                
+                {/* 聊天按鈕區 */}
+                {scChatData.length > 0 && (
+                  <div style={{marginBottom:20}}>
+                    <p style={{color:'#9a7a5a',fontSize:'.78rem',marginBottom:10,letterSpacing:'.04em'}}>💬 與角色聊天</p>
+                    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                      {scChatData.map((chatChar,ci)=>{
+                        const charName = scene.dialogues[chatChar.charIdx]?.name || '';
+                        const charAvatar = scene.dialogues[chatChar.charIdx]?.avatar || '';
+                        return (
+                          <button key={ci} onClick={()=>startChat(ci)}
+                            onMouseEnter={e=>e.currentTarget.style.transform='translateX(4px)'}
+                            onMouseLeave={e=>e.currentTarget.style.transform='translateX(0)'}
+                            style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:'rgba(250,243,228,.8)',border:'1.5px solid rgba(210,180,140,.5)',borderRadius:12,cursor:'pointer',fontFamily:"'Noto Serif TC',serif",transition:'all .18s',textAlign:'left'}}>
+                            <img src={charAvatar} alt={charName} style={{width:36,height:36,objectFit:'contain',borderRadius:'50%',background:'rgba(255,253,249,1)',border:'1.5px solid rgba(210,180,140,.4)'}}/>
+                            <div>
+                              <div style={{fontSize:'.78rem',fontWeight:700,color:'#3d2c1e'}}>{charName}</div>
+                              <div style={{fontSize:'.7rem',color:'#9a7a5a'}}>點擊開始聊天</div>
+                            </div>
+                            <MessageCircle style={{width:16,height:16,color:scene.accent,marginLeft:'auto'}}/>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button onClick={returnToMap}
+                  onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+                  onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}
+                  style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#1e40af,#1d4ed8)',color:'white',border:'none',borderRadius:14,cursor:'pointer',fontFamily:"'Noto Serif TC',serif",fontWeight:700,fontSize:'.93rem',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 6px 20px rgba(30,64,175,.3)',transition:'all .2s'}}>
+                  返回大地圖 <ArrowRight style={{width:17,height:17}}/>
+                </button>
+              </div>
+            )}
+
+            {/* 狀態四：聊天中 */}
+            {isChatting && scChatData[chatCharIdx] && (() => {
+              const chatChar = scChatData[chatCharIdx];
+              const charDlg  = scene.dialogues[chatChar.charIdx];
+              const msg      = chatChar.messages[chatMsgIdx];
+              const isLast   = chatMsgIdx >= chatChar.messages.length - 1;
+              return (
+                <div className="anim-fade-up" style={{display:'flex',flexDirection:'column',height:'100%'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,paddingBottom:12,borderBottom:'1px solid rgba(210,180,140,.4)'}}>
+                    <img src={charDlg.avatar} alt={charDlg.name} style={{width:40,height:40,objectFit:'contain',borderRadius:'50%',background:'rgba(255,253,249,1)',border:`1.5px solid ${scene.accent}55`}}/>
+                    <div>
+                      <div style={{fontWeight:800,color:'#1a1208',fontSize:'.92rem'}}>{charDlg.name}</div>
+                      <div style={{fontSize:'.7rem',color:'#9a7a5a'}}>聊天 {chatMsgIdx+1} / {chatChar.messages.length}</div>
+                    </div>
+                    <div style={{marginLeft:'auto',display:'flex',gap:4}}>
+                      {chatChar.messages.map((_,i)=>(
+                        <div key={i} style={{width:6,height:6,borderRadius:'50%',background:i<=chatMsgIdx?scene.accent:'rgba(210,180,140,.4)',transition:'all .3s'}}/>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="speech-chat anim-chat" key={`chat-${chatMsgIdx}`} style={{marginBottom:20,flex:1}}>
+                    <p style={{fontSize:'.92rem',color:'#3d2c1e',lineHeight:1.8,margin:0,fontWeight:500}}>{msg}</p>
+                  </div>
+
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    <button onClick={nextChatMsg}
+                      onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+                      onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}
+                      style={{width:'100%',padding:'12px',background:`linear-gradient(135deg,${scene.accent},${scene.accent}cc)`,color:'white',border:'none',borderRadius:12,cursor:'pointer',fontFamily:"'Noto Serif TC',serif",fontWeight:700,fontSize:'.9rem',display:'flex',alignItems:'center',justifyContent:'center',gap:6,transition:'all .2s',boxShadow:`0 5px 18px ${scene.accent}44`}}>
+                      {isLast?'結束聊天 👋':'繼續聊天 →'}
+                    </button>
+                    <button onClick={()=>setIsChatting(false)}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=scene.accent;e.currentTarget.style.color=scene.accent}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor='rgba(210,180,140,.5)';e.currentTarget.style.color='#9a7a5a'}}
+                      style={{background:'none',border:'1px solid rgba(210,180,140,.5)',color:'#9a7a5a',padding:'8px',borderRadius:10,cursor:'pointer',fontFamily:"'Noto Serif TC',serif",fontSize:'.8rem',fontWeight:600,transition:'all .2s'}}>
+                      返回場景
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ──────────── VICTORY ──────────── */}
+      {gameState==='victory' && (
+        <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+          {/* 背景圖 */}
+          <div style={{position:'absolute',inset:0,backgroundImage:"url('背景畫面2.png')",backgroundSize:'cover',backgroundPosition:'center'}}/>
+          <div style={{position:'absolute',inset:0,background:'rgba(255,252,240,.55)'}}/>
+          <Confetti/>
+          <div className="anim-zoom-in card-shadow" style={{position:'relative',zIndex:10,maxWidth:500,width:'90%',background:'linear-gradient(160deg,rgba(255,253,249,.97) 0%,rgba(253,244,229,.97) 100%)',borderRadius:28,overflow:'hidden',border:'1px solid rgba(201,149,42,.32)',textAlign:'center'}}>
+            <div style={{height:6,background:'linear-gradient(90deg,#c0392b,#e67e22,#f1c40f,#27ae60,#2980b9,#c0392b)'}}/>
+            <div style={{padding:'40px 32px 36px'}}>
+              <div style={{position:'relative',width:110,height:110,margin:'0 auto 20px'}}>
+                <Trophy className="anim-float" style={{width:110,height:110,color:'#c9952a',filter:'drop-shadow(0 10px 28px rgba(201,149,42,.42))'}}/>
+                <div className="anim-heart-pop" style={{position:'absolute',bottom:0,right:-6,animationDelay:'.3s'}}>
+                  <Heart style={{width:36,height:36,color:'#c0392b'}} filled/>
+                </div>
+              </div>
+              <h1 style={{fontSize:'2.5rem',fontWeight:900,color:'#1a1208',marginBottom:12,letterSpacing:'.07em'}}>
+                恭喜通關！🎉
+              </h1>
+              <p style={{color:'#5a4030',fontSize:'1.02rem',lineHeight:1.82,marginBottom:10}}>
+                你已經收集了 <strong style={{color:'#c0392b'}}>6 個</strong>應用文愛心拼塊，<br/>
+                完全掌握了書信與應用文的訣竅！
+              </p>
+              <p className="shimmer-text" style={{fontWeight:900,marginBottom:26,fontSize:'1.1rem'}}>
+                你現在是名副其實的「應用文小高手」！
+              </p>
+              <div style={{display:'flex',justifyContent:'center',gap:8,marginBottom:28}}>
+                {[...Array(6)].map((_,i)=>(
+                  <div key={i} className="anim-heart-pop" style={{animationDelay:`${i*.1}s`}}>
+                    <Heart style={{width:28,height:28,color:'#c0392b'}} filled/>
+                  </div>
+                ))}
+              </div>
+              <button onClick={goToPreVideo}
+                onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+                onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}
+                style={{width:'100%',padding:'15px',background:'linear-gradient(135deg,#1a1208,#3d2c1e)',color:'#f5e6c8',border:'none',borderRadius:14,cursor:'pointer',fontFamily:"'Noto Serif TC',serif",fontWeight:700,fontSize:'1rem',letterSpacing:'.06em',boxShadow:'0 6px 20px rgba(0,0,0,.24)',transition:'all .2s'}}>
+                🏠 回到遊戲開始
+              </button>
+              <p style={{marginTop:16,fontSize:'1rem',color:'#ffffff',fontWeight:800,letterSpacing:'.16em',textShadow:'0 1px 8px rgba(0,0,0,.5)'}}>南一書局 × 林威宇老師 製作</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
