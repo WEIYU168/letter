@@ -1047,6 +1047,10 @@ function App() {
     _useState16 = _slicedToArray(_useState15, 2),
     wrongCount = _useState16[0],
     setWrongCount = _useState16[1];
+  var _useState23 = useState([0, 0, 0, 0, 0, 0]),
+    _useState24 = _slicedToArray(_useState23, 2),
+    sceneProgress = _useState24[0],
+    setSceneProgress = _useState24[1];
 
   /* chat states */
   var _useState17 = useState(false),
@@ -1211,6 +1215,11 @@ function App() {
   /* 鍵盤 */
   useEffect(function () {
     var dn = function dn(e) {
+      if (gameState === 'map' && (e.key === ' ' || e.key === 'Spacebar')) {
+        e.preventDefault();
+        if (nearbyScene !== null) enterScene(nearbyScene);
+        return;
+      }
       if (e.key in keysRef.current) {
         var wasPressed = keysRef.current[e.key];
         keysRef.current[e.key] = true;
@@ -1241,7 +1250,7 @@ function App() {
       window.removeEventListener('keydown', dn);
       window.removeEventListener('keyup', up);
     };
-  }, [gameState]);
+  }, [gameState, nearbyScene]);
 
   /* 地圖移動迴圈 */
   useEffect(function () {
@@ -1302,6 +1311,7 @@ function App() {
     setHearts([false, false, false, false, false, false]);
     setCurrentSceneIndex(0);
     setWrongCount(0);
+    setSceneProgress([0, 0, 0, 0, 0, 0]);
     if (bgmRef.current) {
       bgmRef.current.pause();
       bgmRef.current.currentTime = 0;
@@ -1319,6 +1329,7 @@ function App() {
     });
     setCurrentSceneIndex(0);
     setHearts([false, false, false, false, false, false]);
+    setSceneProgress([0, 0, 0, 0, 0, 0]);
     setWrongCount(0);
     if (bgmRef.current) {
       bgmRef.current.currentTime = 0;
@@ -1345,7 +1356,7 @@ function App() {
     }
   };
   var openChallenge = function openChallenge() {
-    setCurrentQuestionIndex(0);
+    setCurrentQuestionIndex(Math.min(sceneProgress[currentSceneIndex] || 0, scenesData[currentSceneIndex].questions.length - 1));
     setFeedback(null);
     setIsChallenging(true);
     setIsChatting(false);
@@ -1377,6 +1388,11 @@ function App() {
     if (optIdx === q.answer) {
       setFeedback('correct');
       playCorrect();
+      setSceneProgress(function (prev) {
+        var nextProgress = _toConsumableArray(prev);
+        nextProgress[currentSceneIndex] = Math.max(nextProgress[currentSceneIndex] || 0, currentQuestionIndex + 1);
+        return nextProgress;
+      });
       setTimeout(function () {
         if (currentQuestionIndex < sc.questions.length - 1) {
           setCurrentQuestionIndex(function (p) {
@@ -1387,6 +1403,11 @@ function App() {
           var nh = _toConsumableArray(hearts);
           nh[currentSceneIndex] = true;
           setHearts(nh);
+          setSceneProgress(function (prev) {
+            var nextProgress = _toConsumableArray(prev);
+            nextProgress[currentSceneIndex] = sc.questions.length;
+            return nextProgress;
+          });
           setIsChallenging(false);
           setFeedback(null);
         }
@@ -1410,10 +1431,7 @@ function App() {
     }, hearts.map(function (earned, i) {
       return /*#__PURE__*/React.createElement("div", {
         key: i,
-        style: earned ? {
-          animation: "heartPop .42s cubic-bezier(.34,1.56,.64,1) both",
-          animationDelay: "".concat(i * .06, "s")
-        } : {}
+        style: {}
       }, /*#__PURE__*/React.createElement(Heart, {
         className: "w-5 h-5 sm:w-6 sm:h-6 ".concat(earned ? 'text-red-500' : 'text-gray-300'),
         filled: earned
