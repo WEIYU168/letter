@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>應用文小高手遊戲</title>
+  <title>知說答禮—應用文小高手</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
@@ -29,8 +29,8 @@
       background:linear-gradient(160deg,var(--parchment) 0%,var(--parchment-mid) 100%);
       min-height:100vh;
     }
-    @keyframes fadeInUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes zoomIn{from{opacity:0;transform:scale(0.93)}to{opacity:1;transform:scale(1)}}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes zoomIn{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}
     @keyframes inkDrop{0%{opacity:0;transform:scale(0.5) rotate(-6deg)}65%{opacity:1;transform:scale(1.06) rotate(1deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
     @keyframes floatBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
     @keyframes orbitPulse{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.55;transform:scale(1.06)}}
@@ -40,15 +40,21 @@
     @keyframes shimmerSlide{0%{background-position:-200% center}100%{background-position:200% center}}
     @keyframes bubbleIn{0%{opacity:0;transform:scale(0.8) translateY(8px)}100%{opacity:1;transform:scale(1) translateY(0)}}
     @keyframes chatSlide{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes sceneBgDrift{from{opacity:.88;transform:scale(1.025)}to{opacity:1;transform:scale(1)}}
+    @keyframes characterSettle{from{opacity:0;transform:translateY(22px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 
-    .anim-fade-up{animation:fadeInUp .55s cubic-bezier(.16,1,.3,1) both}
-    .anim-zoom-in{animation:zoomIn .38s cubic-bezier(.34,1.56,.64,1) both}
+    .anim-fade-up{animation:fadeInUp .5s cubic-bezier(.16,1,.3,1) both}
+    .anim-zoom-in{animation:zoomIn .42s cubic-bezier(.16,1,.3,1) both}
     .anim-ink-drop{animation:inkDrop .48s cubic-bezier(.34,1.56,.64,1) both}
     .anim-float{animation:floatBob 3.6s ease-in-out infinite}
     .anim-heart-pop{animation:heartPop .42s cubic-bezier(.34,1.56,.64,1) both}
     .anim-glow-ring{animation:glowRing 2.2s ease-in-out infinite}
     .anim-bubble{animation:bubbleIn .4s cubic-bezier(.34,1.56,.64,1) both}
     .anim-chat{animation:chatSlide .35s ease both}
+    .anim-scene-bg{animation:sceneBgDrift .7s cubic-bezier(.16,1,.3,1) both}
+    .character-img{display:block;max-width:100%;height:auto;will-change:transform,opacity;backface-visibility:hidden;animation:characterSettle .58s cubic-bezier(.16,1,.3,1) both}
+    .map-full{touch-action:none}
+    .map-player{transition:left .045s linear,top .045s linear;will-change:left,top,transform}
 
     .bokeh-orb{position:absolute;border-radius:50%;pointer-events:none;animation:orbitPulse ease-in-out infinite}
 
@@ -104,7 +110,7 @@
 
     .map-popup{background:rgba(255,253,249,.97);backdrop-filter:blur(20px);border:1.5px solid rgba(192,57,43,.22);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.16),0 6px 20px rgba(192,57,43,.08)}
 
-    .dpad-btn{background:rgba(255,255,255,.92);border:none;border-radius:11px;width:46px;height:46px;box-shadow:0 4px 0 rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.09);cursor:pointer;transition:all .1s;display:flex;align-items:center;justify-content:center;font-size:1.1rem;backdrop-filter:blur(8px)}
+    .dpad-btn{background:rgba(255,255,255,.92);border:none;border-radius:11px;width:46px;height:46px;box-shadow:0 4px 0 rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.09);cursor:pointer;transition:all .1s;display:flex;align-items:center;justify-content:center;font-size:1.1rem;backdrop-filter:blur(8px);touch-action:none;user-select:none;-webkit-user-select:none}
     .dpad-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.14)}
 
     .confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
@@ -127,7 +133,19 @@
     @media (max-width: 860px) {
       .playing-wrap { flex-direction: column !important; min-height:unset !important; }
       .playing-left { flex: none !important; width: 100% !important; min-height: 360px !important; }
-      .playing-right{ flex: none !important; width: 100% !important; border-left: none !important; border-top: 1px solid rgba(230,215,190,.5); }
+      .playing-right{ flex: none !important; width: 100% !important; min-height: unset !important; border-left: none !important; border-top: 1px solid rgba(230,215,190,.5); }
+    }
+    @media (max-width: 720px) {
+      .map-full{max-width:100% !important;min-height:calc(100svh - 48px) !important;border-radius:0 !important}
+      .map-player img{height:86px !important}
+      .map-record{width:92px !important;height:163px !important;right:6px !important;opacity:.9}
+      .map-dpad{bottom:10px !important;left:10px !important;grid-template-columns:repeat(3,44px) !important;grid-template-rows:repeat(2,44px) !important}
+      .dpad-btn{width:44px;height:44px;font-size:1rem}
+      .map-popup{left:10px !important;right:10px !important;bottom:106px !important;min-width:0 !important}
+      .heart-bar{padding:5px 10px}
+      .playing-wrap{border-radius:0 !important}
+      .playing-left{min-height:52svh !important}
+      .playing-right{padding:20px 16px !important}
     }
     @media (orientation: landscape) and (max-height: 520px) {
       .playing-wrap { min-height: 96vh !important; }
@@ -448,7 +466,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 </script>
 <script>
-/* 應用文小高手 遊戲主程式（JSX 已預先編譯成純 JS，免 Babel；中文保持明文方便編輯）*/
+/* 知說答禮—應用文小高手 遊戲主程式（JSX 已預先編譯成純 JS，免 Babel；中文保持明文方便編輯）*/
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
@@ -1053,6 +1071,13 @@ function App() {
     ArrowRight: false
   });
   var requestRef = useRef();
+  var playerPosRef = useRef({
+    x: 35,
+    y: 50
+  });
+  var mapPlayerRef = useRef(null);
+  var lastMoveTimeRef = useRef(null);
+  var lastPlayerStateSyncRef = useRef(0);
   var videoStartedRef = useRef(false); /* 開場影片是否已真正開始播放 */
 
   /* ── Web Audio 音效合成 ── */
@@ -1147,6 +1172,30 @@ function App() {
     }
   }
 
+  var syncPlayerDom = function syncPlayerDom(pos) {
+    if (!mapPlayerRef.current) return;
+    mapPlayerRef.current.style.left = "".concat(pos.x, "%");
+    mapPlayerRef.current.style.top = "".concat(pos.y, "%");
+  };
+  var movePlayerBy = function movePlayerBy(dx, dy, step, syncNow) {
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var prev = playerPosRef.current;
+    var nx = Math.max(3, Math.min(97, prev.x + dx / len * step));
+    var ny = Math.max(3, Math.min(97, prev.y + dy / len * step));
+    if (Math.abs(nx - prev.x) <= 0.01 && Math.abs(ny - prev.y) <= 0.01) return;
+    var next = {
+      x: nx,
+      y: ny
+    };
+    playerPosRef.current = next;
+    syncPlayerDom(next);
+    var now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    if (syncNow || now - lastPlayerStateSyncRef.current > 90) {
+      lastPlayerStateSyncRef.current = now;
+      setPlayerPos(next);
+    }
+  };
+
   /* 開場影片保險：進入影片畫面 8 秒後，若影片「根本沒開始播放」（檔案壞、編碼不支援、自動播放被擋且使用者沒點），自動進遊戲，避免卡黑畫面。已正常播放的影片不受影響。 */
   useEffect(function () {
     if (gameState !== 'video') return;
@@ -1163,14 +1212,27 @@ function App() {
   useEffect(function () {
     var dn = function dn(e) {
       if (e.key in keysRef.current) {
+        var wasPressed = keysRef.current[e.key];
         keysRef.current[e.key] = true;
-        if (gameState === 'map') e.preventDefault();
+        if (gameState === 'map') {
+          e.preventDefault();
+          if (!wasPressed) {
+            if (e.key === 'ArrowUp') movePlayerBy(0, -1, 0.32, true);
+            if (e.key === 'ArrowDown') movePlayerBy(0, 1, 0.32, true);
+            if (e.key === 'ArrowLeft') movePlayerBy(-1, 0, 0.32, true);
+            if (e.key === 'ArrowRight') movePlayerBy(1, 0, 0.32, true);
+          }
+        }
       }
     };
     var up = function up(e) {
       if (e.key in keysRef.current) {
         keysRef.current[e.key] = false;
-        if (gameState === 'map') e.preventDefault();
+        if (gameState === 'map') {
+          e.preventDefault();
+          lastPlayerStateSyncRef.current = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+          setPlayerPos(playerPosRef.current);
+        }
       }
     };
     window.addEventListener('keydown', dn);
@@ -1184,37 +1246,40 @@ function App() {
   /* 地圖移動迴圈 */
   useEffect(function () {
     if (gameState !== 'map') return;
-    var _tick = function tick() {
-      setPlayerPos(function (prev) {
-        var dx = 0,
-          dy = 0;
-        var sp = 0.6;
-        if (keysRef.current.ArrowUp) dy -= sp;
-        if (keysRef.current.ArrowDown) dy += sp;
-        if (keysRef.current.ArrowLeft) dx -= sp;
-        if (keysRef.current.ArrowRight) dx += sp;
-        if (dx !== 0 || dy !== 0) {
-          var nx = Math.max(3, Math.min(97, prev.x + dx));
-          var ny = Math.max(3, Math.min(97, prev.y + dy));
-          if (nx !== prev.x || ny !== prev.y) return {
-            x: nx,
-            y: ny
-          };
-        }
-        return prev;
-      });
+    playerPosRef.current = playerPos;
+    syncPlayerDom(playerPos);
+    lastMoveTimeRef.current = null;
+    lastPlayerStateSyncRef.current = 0;
+    var _tick = function tick(now) {
+      var last = lastMoveTimeRef.current === null ? now : lastMoveTimeRef.current;
+      var dt = Math.min(34, now - last);
+      lastMoveTimeRef.current = now;
+      var dx = 0,
+        dy = 0;
+      if (keysRef.current.ArrowUp) dy -= 1;
+      if (keysRef.current.ArrowDown) dy += 1;
+      if (keysRef.current.ArrowLeft) dx -= 1;
+      if (keysRef.current.ArrowRight) dx += 1;
+      if (dx !== 0 || dy !== 0) {
+        movePlayerBy(dx, dy, dt * 0.024);
+      }
       requestRef.current = requestAnimationFrame(_tick);
     };
     requestRef.current = requestAnimationFrame(_tick);
     return function () {
+      lastMoveTimeRef.current = null;
       return cancelAnimationFrame(requestRef.current);
     };
   }, [gameState]);
-  var handlePointerDown = function handlePointerDown(dir) {
+  var handlePointerDown = function handlePointerDown(dir, e) {
+    if (e && e.preventDefault) e.preventDefault();
     keysRef.current[dir] = true;
   };
-  var handlePointerUp = function handlePointerUp(dir) {
+  var handlePointerUp = function handlePointerUp(dir, e) {
+    if (e && e.preventDefault) e.preventDefault();
     keysRef.current[dir] = false;
+    lastPlayerStateSyncRef.current = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    setPlayerPos(playerPosRef.current);
   };
 
   /* 距離偵測 */
@@ -1244,6 +1309,10 @@ function App() {
   };
   var startGame = function startGame() {
     setGameState('map');
+    playerPosRef.current = {
+      x: 35,
+      y: 50
+    };
     setPlayerPos({
       x: 35,
       y: 50
@@ -1392,6 +1461,7 @@ function App() {
       overflow: 'hidden'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "anim-scene-bg",
     style: {
       position: 'absolute',
       inset: 0,
@@ -1537,10 +1607,11 @@ function App() {
       fontWeight: 900,
       color: '#f5e6c8',
       marginBottom: 8,
-      letterSpacing: '.12em',
+      letterSpacing: '.05em',
+      lineHeight: 1.18,
       textShadow: '0 2px 24px rgba(192,57,43,.55)'
     }
-  }, "應用文小高手"), /*#__PURE__*/React.createElement("p", {
+  }, "知說答禮—應用文小高手"), /*#__PURE__*/React.createElement("p", {
     style: {
       color: 'rgba(245,230,200,.45)',
       fontSize: '.82rem',
@@ -1731,9 +1802,10 @@ function App() {
       fontWeight: 900,
       color: '#1a1208',
       margin: 0,
-      letterSpacing: '.07em'
+      letterSpacing: '.04em',
+      lineHeight: 1.25
     }
-  }, "應用文小高手"), /*#__PURE__*/React.createElement("p", {
+  }, "知說答禮—應用文小高手"), /*#__PURE__*/React.createElement("p", {
     style: {
       textAlign: 'center',
       color: '#c0392b',
@@ -1846,6 +1918,7 @@ function App() {
       boxShadow: '0 24px 80px rgba(0,0,0,.13)'
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "anim-scene-bg",
     style: {
       position: 'absolute',
       inset: 0,
@@ -1905,11 +1978,13 @@ function App() {
       }
     }, sc.title));
   }), /*#__PURE__*/React.createElement("div", {
+    className: "map-player",
+    ref: mapPlayerRef,
     style: {
       position: 'absolute',
       left: "".concat(playerPos.x, "%"),
       top: "".concat(playerPos.y, "%"),
-      transform: 'translate(-50%,-85%)',
+      transform: 'translate3d(-50%,-85%,0)',
       zIndex: 20,
       display: 'flex',
       flexDirection: 'column',
@@ -2001,6 +2076,7 @@ function App() {
       height: 14
     }
   }))), /*#__PURE__*/React.createElement("div", {
+    className: "map-record",
     style: {
       position: 'absolute',
       top: '50%',
@@ -2053,6 +2129,7 @@ function App() {
       }
     })));
   }))), /*#__PURE__*/React.createElement("div", {
+    className: "map-dpad",
     style: {
       position: 'absolute',
       bottom: 16,
@@ -2066,47 +2143,59 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("div", null), /*#__PURE__*/React.createElement("button", {
     className: "dpad-btn",
-    onPointerDown: function onPointerDown() {
-      return handlePointerDown('ArrowUp');
+    onPointerDown: function onPointerDown(e) {
+      return handlePointerDown('ArrowUp', e);
     },
-    onPointerUp: function onPointerUp() {
-      return handlePointerUp('ArrowUp');
+    onPointerUp: function onPointerUp(e) {
+      return handlePointerUp('ArrowUp', e);
     },
-    onPointerLeave: function onPointerLeave() {
-      return handlePointerUp('ArrowUp');
+    onPointerLeave: function onPointerLeave(e) {
+      return handlePointerUp('ArrowUp', e);
+    },
+    onPointerCancel: function onPointerCancel(e) {
+      return handlePointerUp('ArrowUp', e);
     }
   }, "⬆️"), /*#__PURE__*/React.createElement("div", null), /*#__PURE__*/React.createElement("button", {
     className: "dpad-btn",
-    onPointerDown: function onPointerDown() {
-      return handlePointerDown('ArrowLeft');
+    onPointerDown: function onPointerDown(e) {
+      return handlePointerDown('ArrowLeft', e);
     },
-    onPointerUp: function onPointerUp() {
-      return handlePointerUp('ArrowLeft');
+    onPointerUp: function onPointerUp(e) {
+      return handlePointerUp('ArrowLeft', e);
     },
-    onPointerLeave: function onPointerLeave() {
-      return handlePointerUp('ArrowLeft');
+    onPointerLeave: function onPointerLeave(e) {
+      return handlePointerUp('ArrowLeft', e);
+    },
+    onPointerCancel: function onPointerCancel(e) {
+      return handlePointerUp('ArrowLeft', e);
     }
   }, "⬅️"), /*#__PURE__*/React.createElement("button", {
     className: "dpad-btn",
-    onPointerDown: function onPointerDown() {
-      return handlePointerDown('ArrowDown');
+    onPointerDown: function onPointerDown(e) {
+      return handlePointerDown('ArrowDown', e);
     },
-    onPointerUp: function onPointerUp() {
-      return handlePointerUp('ArrowDown');
+    onPointerUp: function onPointerUp(e) {
+      return handlePointerUp('ArrowDown', e);
     },
-    onPointerLeave: function onPointerLeave() {
-      return handlePointerUp('ArrowDown');
+    onPointerLeave: function onPointerLeave(e) {
+      return handlePointerUp('ArrowDown', e);
+    },
+    onPointerCancel: function onPointerCancel(e) {
+      return handlePointerUp('ArrowDown', e);
     }
   }, "⬇️"), /*#__PURE__*/React.createElement("button", {
     className: "dpad-btn",
-    onPointerDown: function onPointerDown() {
-      return handlePointerDown('ArrowRight');
+    onPointerDown: function onPointerDown(e) {
+      return handlePointerDown('ArrowRight', e);
     },
-    onPointerUp: function onPointerUp() {
-      return handlePointerUp('ArrowRight');
+    onPointerUp: function onPointerUp(e) {
+      return handlePointerUp('ArrowRight', e);
     },
-    onPointerLeave: function onPointerLeave() {
-      return handlePointerUp('ArrowRight');
+    onPointerLeave: function onPointerLeave(e) {
+      return handlePointerUp('ArrowRight', e);
+    },
+    onPointerCancel: function onPointerCancel(e) {
+      return handlePointerUp('ArrowRight', e);
     }
   }, "➡️"))), gameState === 'playing' && /*#__PURE__*/React.createElement("div", {
     className: "anim-zoom-in playing-wrap",
@@ -2131,6 +2220,7 @@ function App() {
       minHeight: 540
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "anim-scene-bg",
     style: {
       position: 'absolute',
       inset: 0,
@@ -2268,10 +2358,11 @@ function App() {
         }, dlg0.text)), /*#__PURE__*/React.createElement("img", {
           src: dlg0.avatar,
           alt: dlg0.name,
-          className: "anim-fade-up",
+          className: "character-img",
           style: {
             objectFit: 'contain',
             height: charH,
+            maxWidth: '50%',
             filter: shadow,
             alignSelf: 'flex-end'
           }
@@ -2290,10 +2381,11 @@ function App() {
         }, /*#__PURE__*/React.createElement("img", {
           src: dlg0.avatar,
           alt: dlg0.name,
-          className: "anim-fade-up",
+          className: "character-img",
           style: {
             objectFit: 'contain',
             height: charH,
+            maxWidth: '50%',
             filter: shadow,
             alignSelf: 'flex-end'
           }
@@ -2352,10 +2444,11 @@ function App() {
         }, dlg0.text)), /*#__PURE__*/React.createElement("img", {
           src: dlg0.avatar,
           alt: dlg0.name,
-          className: "anim-fade-up",
+          className: "character-img",
           style: {
             objectFit: 'contain',
             height: 'clamp(280px,60vh,560px)',
+            maxWidth: '58%',
             filter: shadow,
             marginTop: 40
           }
@@ -2410,6 +2503,7 @@ function App() {
           alt: dlg.name,
           style: {
             objectFit: 'contain',
+            maxWidth: '100%',
             height: charHMulti,
             filter: shadow,
             alignSelf: isRight ? 'flex-end' : 'flex-start'
