@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>知說答禮—應用文小高手</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     /* ── Tailwind CDN 移除後的等效樣式（本檔實際用到的 class）── */
     .mx-auto{margin-left:auto;margin-right:auto}
@@ -54,7 +52,40 @@
     .anim-scene-bg{animation:sceneBgDrift .7s cubic-bezier(.16,1,.3,1) both}
     .character-img{display:block;max-width:100%;height:auto;will-change:transform,opacity;backface-visibility:hidden;animation:characterSettle .58s cubic-bezier(.16,1,.3,1) both}
     .map-full{touch-action:none}
-    .map-player{transition:left .045s linear,top .045s linear;will-change:left,top,transform}
+    .map-full>.anim-scene-bg{filter:saturate(.87) brightness(.92)}
+    .playing-left>.anim-scene-bg{filter:saturate(.93) brightness(.96)}
+    .map-player{will-change:left,top}
+    .map-terrain,.map-terrain canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    .qiqi-body{height:clamp(94px,14vh,150px);aspect-ratio:3/4;background:url('qiqi-walk.webp') left center/400% 100% no-repeat;transform-origin:center bottom;filter:drop-shadow(0 1px 1px #58463066)}
+    .qiqi-body{height:clamp(122px,18vh,188px)}
+    .map-player.face-left .qiqi-body{scale:-1 1}
+    .stick{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:12px;width:clamp(88px,13vmin,112px);aspect-ratio:1;border-radius:50%;z-index:25;touch-action:none;background:radial-gradient(circle,#f7efe2dd,#b79c7ecc);border:3px double #fff8ec;box-shadow:0 3px 12px #382d3b55;display:grid;place-items:center}
+    .stick:after{content:'';width:40%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff4dc,#bf8667);box-shadow:0 2px 5px #50382966;transform:translate(var(--x,0px),var(--y,0px))}
+    .place-active>div:first-child{animation:placeSignal 1.5s ease-in-out infinite}
+    @keyframes placeSignal{50%{outline:4px solid #ffcf64;filter:brightness(1.15)}}
+    @media(prefers-reduced-motion:reduce){.place-active>div:first-child{animation:none;outline:4px solid #ffcf64}}
+    @keyframes qiqiStride{0%,100%{background-position:33.333% center}25%,75%{background-position:66.667% center}50%{background-position:100% center}}
+    .map-player.walking .qiqi-body{animation:qiqiStride .68s steps(1,end) infinite}
+    .map-player img,.character-img{transform-origin:center bottom}
+    @keyframes portraitBreath{50%{scale:1.002 1.008}}
+    @keyframes walkBeat{25%{transform:translateY(-2px) rotate(-1deg)}75%{transform:translateY(-2px) rotate(1deg)}}
+    @keyframes airDrift{0%{opacity:0;transform:translate(0,0)}25%,70%{opacity:.48}100%{opacity:0;transform:translate(var(--drift,25px),-32px)}}
+    .air-field{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+    .air-field i{position:absolute;width:3px;height:2px;background:#fff3cd;border-radius:50%;animation:airDrift 7s ease-in-out infinite}
+    .air-field.outdoors{--drift:64px}
+    .air-field i:nth-child(1){left:8%;top:44%;animation-delay:-3s}
+    .air-field i:nth-child(2){left:23%;top:28%;animation-delay:-6s}
+    .air-field i:nth-child(3){left:37%;top:54%;animation-duration:9s}
+    .air-field i:nth-child(4){left:16%;top:63%;animation-delay:-1s}
+    .air-field.outdoors i:nth-child(3){left:78%}
+    @media(max-width:640px){.air-field i:nth-child(even){display:none}}
+    @media(prefers-reduced-motion:no-preference){
+      .character-img{animation:characterSettle .58s ease-out both,portraitBreath 4.8s ease-in-out infinite}
+      .anim-fade-up:nth-child(even)>.character-img{animation-duration:.58s,5.4s}
+      .map-player img{animation:portraitBreath 4.8s ease-in-out infinite}
+      .map-player.walking img{animation:walkBeat .7s ease-in-out infinite}
+    }
+    @media(prefers-reduced-motion:reduce){.air-field{display:none}.character-img,.playing-left>.anim-scene-bg,.map-full,.map-full>.anim-scene-bg{animation:none}}
 
     .bokeh-orb{position:absolute;border-radius:50%;pointer-events:none;animation:orbitPulse ease-in-out infinite}
 
@@ -155,6 +186,11 @@
 
     .challenge-panel{background:linear-gradient(160deg,#fffdf9 0%,#fdf4e7 100%);border-left:1px solid rgba(230,215,190,.55)}
   </style>
+<script src="three.min.js"></script>
+<script src="terrain-texture.js"></script>
+<script src="terrain.js"></script>
+<link rel="stylesheet" href="village.css">
+<script src="village.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -726,17 +762,17 @@ var scenesData = [{
   mapX: 20,
   mapY: 30,
   bg: 'from-amber-100 via-orange-50 to-amber-200',
-  bgImage: 'home.png',
+  bgImage: 'home.webp',
   icon: '🏠',
   accent: '#c0392b',
   description: '早晨準備出門，遇到家人與留便條紙的情境...',
   dialogues: [{
     name: '媽媽',
-    avatar: '媽媽.png',
+    avatar: '媽媽.webp',
     text: '早安呀！媽媽今天會出門，幫我才會回來，如果有事，你記得看餐桌上的便條紙！'
   }, {
     name: '爸爸',
-    avatar: '爸爸.png',
+    avatar: '爸爸.webp',
     text: '對了，順便考考你最近學的書信常識，準備好了嗎？'
   }],
   questions: [{
@@ -776,13 +812,13 @@ var scenesData = [{
   mapX: 50,
   mapY: 15,
   bg: 'from-emerald-100 via-green-50 to-teal-100',
-  bgImage: '操場.png',
+  bgImage: '操場.webp',
   icon: '⚽',
   accent: '#1a7a4a',
   description: '下課時間在操場遇到同學，以及看見佈告欄...',
   dialogues: [{
     name: '女同學 小美',
-    avatar: '同學.png',
+    avatar: '同學.webp',
     text: '嗨！好巧喔，在這裡遇到你。你剛好在看佈告欄嗎？我們來互相考考應用文吧！'
   }],
   questions: [{
@@ -822,13 +858,13 @@ var scenesData = [{
   mapX: 50,
   mapY: 40,
   bg: 'from-sky-100 via-blue-50 to-indigo-100',
-  bgImage: '教室.png',
+  bgImage: '教室.webp',
   icon: '🏫',
   accent: '#1e40af',
   description: '在教室裡準備寫卡片或信件給辛苦的老師...',
   dialogues: [{
     name: '班級老師',
-    avatar: '老師.png',
+    avatar: '老師.webp',
     text: '各位同學好，教師節快到了。在寫卡片給老師之前，我先來測驗一下你們的書信格式對不對！'
   }],
   questions: [{
@@ -868,17 +904,17 @@ var scenesData = [{
   mapX: 20,
   mapY: 70,
   bg: 'from-yellow-100 via-amber-50 to-lime-100',
-  bgImage: '爺家.png',
+  bgImage: '爺家.webp',
   icon: '🌾',
   accent: '#c9952a',
   description: '週末回鄉下探望祖父母，並參加長輩的壽宴...',
   dialogues: [{
     name: '爺爺',
-    avatar: '爺爺.png',
+    avatar: '爺爺.webp',
     text: '哎呀，乖孫回來啦！來來來，爺爺八十大壽，來幫我看看這些紅包和信件寫得對不對呀？'
   }, {
     name: '奶奶',
-    avatar: '奶奶.png',
+    avatar: '奶奶.webp',
     text: '是呀，你先幫爺爺檢查一下，奶奶去廚房拿你最愛吃的點心喔！'
   }],
   questions: [{
@@ -918,13 +954,13 @@ var scenesData = [{
   mapX: 50,
   mapY: 75,
   bg: 'from-purple-100 via-fuchsia-50 to-pink-100',
-  bgImage: '商店.png',
+  bgImage: '商店.webp',
   icon: '🛍️',
   accent: '#7c3aed',
   description: '來到熱鬧的文創市集，這裡有許多商業應用文...',
   dialogues: [{
     name: '老闆叔叔',
-    avatar: '老闆.png',
+    avatar: '老闆.webp',
     text: '歡迎光臨！我們市集今天剛開幕，有很多祝賀花籃和商業信函，小大師能幫我檢查一下用語嗎？'
   }],
   questions: [{
@@ -964,13 +1000,13 @@ var scenesData = [{
   mapX: 85,
   mapY: 15,
   bg: 'from-teal-100 via-emerald-50 to-cyan-100',
-  bgImage: '後山.png',
+  bgImage: '後山.webp',
   icon: '⛰️',
   accent: '#0d9488',
   description: '放學後和小姪女到後山散步，聊起了平常寫作的習慣...',
   dialogues: [{
     name: '小姪女',
-    avatar: '小姪女.png',
+    avatar: '小姪女.webp',
     text: '阿姨！我們在後山看風景，順便告訴我一些關於應用文小知識吧！'
   }],
   questions: [{
@@ -1066,8 +1102,6 @@ function App() {
     chatMsgIdx = _useState22[0],
     setChatMsgIdx = _useState22[1];
   var bgmRef = useRef(null);
-  var correctSoundRef = useRef(null);
-  var wrongSoundRef = useRef(null);
   var keysRef = useRef({
     ArrowUp: false,
     ArrowDown: false,
@@ -1080,6 +1114,17 @@ function App() {
     y: 50
   });
   var mapPlayerRef = useRef(null);
+  var stick = useRef({x:0,y:0});
+  function steer(e){
+    const pad=e.currentTarget;
+    if(e.type==='pointerdown'){if(!e.isPrimary)return;pad.setPointerCapture(e.pointerId);}
+    if(!pad.hasPointerCapture(e.pointerId))return;
+    const box=pad.getBoundingClientRect(), x=e.clientX-box.left-box.width/2, y=e.clientY-box.top-box.height/2;
+    const length=Math.hypot(x,y), radius=box.width*.32, factor=Math.min(1,radius/(length||1));
+    stick.current=length<6?{x:0,y:0}:{x:x*factor/radius,y:y*factor/radius};
+    pad.style.setProperty('--x',x*factor+'px');pad.style.setProperty('--y',y*factor+'px');
+  }
+  function stopStick(e){stick.current={x:0,y:0};e.currentTarget.style.removeProperty('--x');e.currentTarget.style.removeProperty('--y');}
   var lastMoveTimeRef = useRef(null);
   var lastPlayerStateSyncRef = useRef(0);
   var videoStartedRef = useRef(false); /* 開場影片是否已真正開始播放 */
@@ -1148,32 +1193,17 @@ function App() {
     } catch (e) {}
   }
   useEffect(function () {
-    bgmRef.current = new Audio('校園午後散步.mp3');
+    bgmRef.current = new Audio();
+    bgmRef.current.preload = 'none';
+    bgmRef.current.src = 'game-music.mp3';
     bgmRef.current.loop = true;
-    correctSoundRef.current = new Audio('correct.mp3');
-    wrongSoundRef.current = new Audio('wrong.mp3');
   }, []);
 
-  /* 嘗試播放 mp3，失敗則用 Web Audio 合成 */
   function playCorrect() {
-    if (correctSoundRef.current) {
-      correctSoundRef.current.currentTime = 0;
-      correctSoundRef.current.play().catch(function () {
-        return playBeep('correct');
-      });
-    } else {
-      playBeep('correct');
-    }
+    playBeep('correct');
   }
   function playWrong() {
-    if (wrongSoundRef.current) {
-      wrongSoundRef.current.currentTime = 0;
-      wrongSoundRef.current.play().catch(function () {
-        return playBeep('wrong');
-      });
-    } else {
-      playBeep('wrong');
-    }
+    playBeep('wrong');
   }
 
   var syncPlayerDom = function syncPlayerDom(pos) {
@@ -1213,8 +1243,19 @@ function App() {
   }, [gameState]);
 
   /* 鍵盤 */
+  var heldLetters = useRef(new Set());
   useEffect(function () {
+    var directions = {KeyW:[0,-1], KeyS:[0,1], KeyA:[-1,0], KeyD:[1,0]};
     var dn = function dn(e) {
+      if (gameState === 'map' && directions[e.code] && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        if (!heldLetters.current.has(e.code)) {
+          var direction = directions[e.code];
+          movePlayerBy(direction[0], direction[1], .32, true);
+          heldLetters.current.add(e.code);
+        }
+        return;
+      }
       if (gameState === 'map' && (e.key === ' ' || e.key === 'Spacebar')) {
         e.preventDefault();
         if (nearbyScene !== null) enterScene(nearbyScene);
@@ -1235,6 +1276,7 @@ function App() {
       }
     };
     var up = function up(e) {
+      heldLetters.current.delete(e.code);
       if (e.key in keysRef.current) {
         keysRef.current[e.key] = false;
         if (gameState === 'map') {
@@ -1255,6 +1297,8 @@ function App() {
   /* 地圖移動迴圈 */
   useEffect(function () {
     if (gameState !== 'map') return;
+    function releaseKeys(){heldLetters.current.clear();Object.keys(keysRef.current).forEach(key=>keysRef.current[key]=false);}
+    window.addEventListener('blur',releaseKeys);
     playerPosRef.current = playerPos;
     syncPlayerDom(playerPos);
     lastMoveTimeRef.current = null;
@@ -1265,18 +1309,24 @@ function App() {
       lastMoveTimeRef.current = now;
       var dx = 0,
         dy = 0;
-      if (keysRef.current.ArrowUp) dy -= 1;
-      if (keysRef.current.ArrowDown) dy += 1;
-      if (keysRef.current.ArrowLeft) dx -= 1;
-      if (keysRef.current.ArrowRight) dx += 1;
+      if (keysRef.current.ArrowUp || heldLetters.current.has('KeyW')) dy -= 1;
+      if (keysRef.current.ArrowDown || heldLetters.current.has('KeyS')) dy += 1;
+      if (keysRef.current.ArrowLeft || heldLetters.current.has('KeyA')) dx -= 1;
+      if (keysRef.current.ArrowRight || heldLetters.current.has('KeyD')) dx += 1;
+      var beforeMove = playerPosRef.current;
+      dx+=stick.current.x;dy+=stick.current.y;
       if (dx !== 0 || dy !== 0) {
         movePlayerBy(dx, dy, dt * 0.024);
       }
+      if (mapPlayerRef.current) mapPlayerRef.current.classList.toggle('walking', playerPosRef.current !== beforeMove);
+      if (dx && mapPlayerRef.current) mapPlayerRef.current.classList.toggle('face-left',dx<0);
       requestRef.current = requestAnimationFrame(_tick);
     };
     requestRef.current = requestAnimationFrame(_tick);
     return function () {
       lastMoveTimeRef.current = null;
+      window.removeEventListener('blur',releaseKeys);
+      releaseKeys();
       return cancelAnimationFrame(requestRef.current);
     };
   }, [gameState]);
@@ -1425,6 +1475,10 @@ function App() {
   };
 
   /* ── 共用元件 ── */
+  function renderAir(outdoors) {
+    return React.createElement("div", {className: outdoors ? "air-field outdoors" : "air-field", "aria-hidden": true},
+      [0, 1, 2, 3].map(function (i) { return React.createElement("i", {key: i}); }));
+  }
   var HeartDisplay = function HeartDisplay() {
     return /*#__PURE__*/React.createElement("div", {
       className: "heart-bar mx-auto w-max"
@@ -1483,7 +1537,7 @@ function App() {
     style: {
       position: 'absolute',
       inset: 0,
-      backgroundImage: "url('背景畫面2.png')",
+      backgroundImage: "url('背景畫面2.webp')",
       backgroundSize: 'cover',
       backgroundPosition: 'center'
     }
@@ -1656,7 +1710,7 @@ function App() {
       borderRadius: '50px',
       fontSize: '1.08rem',
       fontWeight: 700,
-      fontFamily: "'Noto Serif TC',serif",
+      fontFamily: 'inherit',
       letterSpacing: '.08em',
       boxShadow: '0 8px 32px rgba(192,57,43,.48),inset 0 1px 0 rgba(255,255,255,.15)',
       transition: 'all .22s ease'
@@ -1687,7 +1741,7 @@ function App() {
       justifyContent: 'center'
     }
   }, /*#__PURE__*/React.createElement("video", {
-    src: "琪琪的應用文生活新.mp4",
+    src: "intro-game.mp4",
     autoPlay: true,
     playsInline: true,
     onEnded: function onEnded() {
@@ -1738,7 +1792,7 @@ function App() {
       padding: '14px 38px',
       borderRadius: '50px',
       cursor: 'pointer',
-      fontFamily: "'Noto Serif TC',serif",
+      fontFamily: 'inherit',
       fontSize: '1.02rem',
       fontWeight: 700,
       letterSpacing: '.06em',
@@ -1940,7 +1994,7 @@ function App() {
     style: {
       position: 'absolute',
       inset: 0,
-      backgroundImage: "url('大地圖.png')",
+      backgroundImage: "url(" + window.mapTextureURL + ")",
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       opacity: .93
@@ -1951,9 +2005,11 @@ function App() {
       inset: 0,
       background: 'linear-gradient(160deg,rgba(253,246,227,.1) 0%,rgba(255,255,255,.04) 100%)'
     }
-  }), scenesData.map(function (sc, idx) {
+  }), React.createElement(MapTerrain,{player:playerPosRef}), React.createElement(VillageLife,{player:playerPosRef}), scenesData.map(function (sc, idx) {
     return /*#__PURE__*/React.createElement("div", {
       key: sc.id,
+      className: nearbyScene===idx?'place-active':'',
+      onClick: nearbyScene===idx?()=>enterScene(idx):undefined,
       style: {
         position: 'absolute',
         left: "".concat(sc.mapX, "%"),
@@ -1962,7 +2018,8 @@ function App() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        pointerEvents: 'none',
+        pointerEvents: nearbyScene===idx?'auto':'none',
+        cursor: nearbyScene===idx?'pointer':'default',
         transition: 'all .35s'
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -1977,10 +2034,10 @@ function App() {
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '2rem',
-        transform: hearts[idx] ? 'scale(1.12)' : 'scale(1)',
+        transform: nearbyScene === idx ? 'scale(1.22)' : hearts[idx] ? 'scale(1.12)' : 'scale(1)',
         transition: 'all .4s'
       }
-    }, hearts[idx] ? '❤️' : sc.icon), /*#__PURE__*/React.createElement("div", {
+    }, React.createElement('img',{src:'badge-'+sc.id+'.webp',alt:'',style:{width:'90%',height:'90%',objectFit:'cover',borderRadius:'50%',border:'2px solid #e6c889'}})), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 8,
         background: 'rgba(255,253,249,.97)',
@@ -2009,15 +2066,8 @@ function App() {
       alignItems: 'center',
       pointerEvents: 'none'
     }
-  }, /*#__PURE__*/React.createElement("img", {
-    src: "主角.png",
-    alt: "主角",
-    style: {
-      height: 110,
-      objectFit: 'contain',
-      filter: 'drop-shadow(0 10px 20px rgba(0,0,0,.28))',
-      zIndex: 10
-    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "qiqi-body", role: "img", "aria-label": "琪琪"
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       width: 40,
@@ -2078,7 +2128,7 @@ function App() {
       border: 'none',
       borderRadius: 12,
       cursor: 'pointer',
-      fontFamily: "'Noto Serif TC',serif",
+      fontFamily: 'inherit',
       fontWeight: 700,
       fontSize: '.93rem',
       display: 'flex',
@@ -2106,7 +2156,7 @@ function App() {
       pointerEvents: 'none'
     }
   }, /*#__PURE__*/React.createElement("img", {
-    src: "過關紀錄.png",
+    src: "過關紀錄.webp",
     alt: "過關紀錄",
     style: {
       position: 'absolute',
@@ -2147,75 +2197,8 @@ function App() {
       }
     })));
   }))), /*#__PURE__*/React.createElement("div", {
-    className: "map-dpad",
-    style: {
-      position: 'absolute',
-      bottom: 16,
-      left: 16,
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3,50px)',
-      gridTemplateRows: 'repeat(2,50px)',
-      gap: 5,
-      opacity: .82,
-      zIndex: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", null), /*#__PURE__*/React.createElement("button", {
-    className: "dpad-btn",
-    onPointerDown: function onPointerDown(e) {
-      return handlePointerDown('ArrowUp', e);
-    },
-    onPointerUp: function onPointerUp(e) {
-      return handlePointerUp('ArrowUp', e);
-    },
-    onPointerLeave: function onPointerLeave(e) {
-      return handlePointerUp('ArrowUp', e);
-    },
-    onPointerCancel: function onPointerCancel(e) {
-      return handlePointerUp('ArrowUp', e);
-    }
-  }, "⬆️"), /*#__PURE__*/React.createElement("div", null), /*#__PURE__*/React.createElement("button", {
-    className: "dpad-btn",
-    onPointerDown: function onPointerDown(e) {
-      return handlePointerDown('ArrowLeft', e);
-    },
-    onPointerUp: function onPointerUp(e) {
-      return handlePointerUp('ArrowLeft', e);
-    },
-    onPointerLeave: function onPointerLeave(e) {
-      return handlePointerUp('ArrowLeft', e);
-    },
-    onPointerCancel: function onPointerCancel(e) {
-      return handlePointerUp('ArrowLeft', e);
-    }
-  }, "⬅️"), /*#__PURE__*/React.createElement("button", {
-    className: "dpad-btn",
-    onPointerDown: function onPointerDown(e) {
-      return handlePointerDown('ArrowDown', e);
-    },
-    onPointerUp: function onPointerUp(e) {
-      return handlePointerUp('ArrowDown', e);
-    },
-    onPointerLeave: function onPointerLeave(e) {
-      return handlePointerUp('ArrowDown', e);
-    },
-    onPointerCancel: function onPointerCancel(e) {
-      return handlePointerUp('ArrowDown', e);
-    }
-  }, "⬇️"), /*#__PURE__*/React.createElement("button", {
-    className: "dpad-btn",
-    onPointerDown: function onPointerDown(e) {
-      return handlePointerDown('ArrowRight', e);
-    },
-    onPointerUp: function onPointerUp(e) {
-      return handlePointerUp('ArrowRight', e);
-    },
-    onPointerLeave: function onPointerLeave(e) {
-      return handlePointerUp('ArrowRight', e);
-    },
-    onPointerCancel: function onPointerCancel(e) {
-      return handlePointerUp('ArrowRight', e);
-    }
-  }, "➡️"))), gameState === 'playing' && /*#__PURE__*/React.createElement("div", {
+    className:"stick", "aria-label":"移動方向圓盤",onPointerDown:steer,onPointerMove:steer,onPointerUp:stopStick,onPointerCancel:stopStick,onLostPointerCapture:stopStick
+  })), gameState === 'playing' && /*#__PURE__*/React.createElement("div", {
     className: "anim-zoom-in playing-wrap",
     style: {
       display: 'flex',
@@ -2250,9 +2233,9 @@ function App() {
     style: {
       position: 'absolute',
       inset: 0,
-      background: 'linear-gradient(to bottom,rgba(255,255,255,.55) 0%,transparent 20%,transparent 50%,rgba(255,255,255,.72) 100%)'
+      background: 'linear-gradient(120deg,rgba(255,236,195,.13),transparent 38%,rgba(36,36,51,.09))'
     }
-  }), /*#__PURE__*/React.createElement("div", {
+  }), renderAir(scene.id === 'playground' || scene.id === 'mountain'), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       zIndex: 10,
@@ -2327,7 +2310,7 @@ function App() {
     var bubbleCls = layout.bubbleSide === 'right' ? 'speech-left' : 'speech-left'; // text always left-aligned
     var charH = 'clamp(270px,56vh,540px)';
     var charHMulti = 'clamp(240px,48vh,460px)';
-    var shadow = 'drop-shadow(0 16px 32px rgba(0,0,0,.24))';
+    var shadow = 'drop-shadow(-1px -1px 1px rgba(255,235,193,.68)) drop-shadow(2px 5px 5px rgba(48,37,49,.24))';
     var nameTag = function nameTag(acc) {
       return {
         display: 'inline-block',
@@ -2519,6 +2502,7 @@ function App() {
         }, dlg.text)), /*#__PURE__*/React.createElement("img", {
           src: dlg.avatar,
           alt: dlg.name,
+          className: "character-img",
           style: {
             objectFit: 'contain',
             maxWidth: '100%',
@@ -2754,7 +2738,7 @@ function App() {
       padding: '7px 20px',
       borderRadius: 10,
       cursor: 'pointer',
-      fontFamily: "'Noto Serif TC',serif",
+      fontFamily: 'inherit',
       fontSize: '.82rem',
       fontWeight: 600,
       transition: 'all .2s'
@@ -2835,7 +2819,7 @@ function App() {
         border: '1.5px solid rgba(210,180,140,.5)',
         borderRadius: 12,
         cursor: 'pointer',
-        fontFamily: "'Noto Serif TC',serif",
+        fontFamily: 'inherit',
         transition: 'all .18s',
         textAlign: 'left'
       }
@@ -2885,7 +2869,7 @@ function App() {
       border: 'none',
       borderRadius: 14,
       cursor: 'pointer',
-      fontFamily: "'Noto Serif TC',serif",
+      fontFamily: 'inherit',
       fontWeight: 700,
       fontSize: '.93rem',
       display: 'flex',
@@ -2997,7 +2981,7 @@ function App() {
         border: 'none',
         borderRadius: 12,
         cursor: 'pointer',
-        fontFamily: "'Noto Serif TC',serif",
+        fontFamily: 'inherit',
         fontWeight: 700,
         fontSize: '.9rem',
         display: 'flex',
@@ -3026,7 +3010,7 @@ function App() {
         padding: '8px',
         borderRadius: 10,
         cursor: 'pointer',
-        fontFamily: "'Noto Serif TC',serif",
+        fontFamily: 'inherit',
         fontSize: '.8rem',
         fontWeight: 600,
         transition: 'all .2s'
@@ -3098,7 +3082,7 @@ function App() {
       style: {
         position: 'absolute',
         inset: 0,
-        backgroundImage: "url('背景畫面2.png')",
+        backgroundImage: "url('背景畫面2.webp')",
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }
@@ -3333,7 +3317,7 @@ function App() {
         border: 'none',
         borderRadius: 12,
         cursor: 'pointer',
-        fontFamily: "'Noto Serif TC',serif",
+        fontFamily: 'inherit',
         fontWeight: 700,
         fontSize: '.98rem',
         letterSpacing: '.06em',
